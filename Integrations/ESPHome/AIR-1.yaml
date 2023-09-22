@@ -1,0 +1,383 @@
+#Define Project
+substitutions:
+  name: apollo-air-1
+  version:  "23.9211"
+  device_description: ${name} made by Apollo Automation - version ${version}.
+  
+esphome:
+  name: "${name}"
+  friendly_name: Apollo Air Mk1 (AIR-1)
+  comment: Apollo Air Mk1 (AIR-1)
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+
+  on_boot:
+  - priority: 900.0
+    then:
+      - lambda: |-
+          id(cpu_speed) = ESP.getCpuFreqMHz();
+
+  project:
+    name: "ApolloAutomation.AIR-1"
+    version: "${version}"
+
+  min_version: 2023.8.1
+
+# Define Board
+esp32:
+  board: esp32-c3-devkitm-1
+  #board: esp32-c3-devkitm-1
+  framework:
+    type: arduino
+  
+#dashboard_import:
+  #package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/MSR-1.yaml
+  #import_full_config: false
+
+
+globals:
+  - id: cpu_speed
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+# Enable Home Assistant API
+# Also Add Buzzer Service Connection
+api:
+
+  services:
+    - service: play_buzzer
+      variables:
+        song_str: string
+      then:
+        - rtttl.play:
+            rtttl: !lambda 'return song_str;'
+
+    #Co2 Calibration Service
+    - service: calibrate_co2_value
+      variables:
+        co2_ppm: float
+      then:
+        - scd4x.perform_forced_calibration:
+            value: !lambda 'return co2_ppm;'
+            id: scd40
+
+
+logger:
+
+ota:
+  password: "apolloautomation"
+  safe_mode: false
+
+wifi:
+
+  power_save_mode: none
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Apollo AIR1 Hotspot"
+
+captive_portal:
+
+improv_serial:
+
+web_server:
+  port: 80
+
+
+
+# Set Up Key Ports For Communication
+i2c:
+  sda: GPIO6
+  scl: GPIO7
+  id: bus_a
+
+
+# Numbers For Configuration
+number:
+
+  #Temperature Offsets
+  - platform: template
+    name: SCD40 Temperature Offset
+    id: scd40_temperature_offset
+    restore_value: true
+    initial_value: 13.13
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+  - platform: template
+    name: SCD40 Humidity Offset
+    id: scd40_humidity_offset
+    restore_value: true
+    initial_value: -38.51
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "%"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+  - platform: template
+    name: BME280 Humidity Offset
+    id: bme280_humidity_offset
+    restore_value: true
+    initial_value: -23.19
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "%"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+  - platform: template
+    name: BME280 Temperature Offset
+    id: bme280_temperature_offset
+    restore_value: true
+    initial_value: 7.11
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+  - platform: template
+    name: Co2 Calibration Number
+    id: co2_calibration_number
+    restore_value: true
+    initial_value: 419.0
+    min_value: 0.0
+    max_value: 1000.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "ppm"
+    optimistic: true
+    mode: box
+    update_interval: never
+    step: 10
+    set_action:
+      - scd4x.perform_forced_calibration:
+          value: !lambda 'return id(co2_calibration_number).state;'
+          id: scd40
+
+  
+
+# Buzzer
+output:
+  - platform: ledc
+    pin: GPIO10
+    id: buzzer
+rtttl:
+ output: buzzer
+
+
+
+binary_sensor:
+  - platform: status
+    name: Online
+    id: ink_ha_connected
+  
+
+sensor:
+  - platform: template
+    name: "ESP Cpu Speed"
+    accuracy_decimals: 0
+    unit_of_measurement: Mhz
+    lambda: |-
+      return (id(cpu_speed));
+    entity_category: "diagnostic"
+
+  - platform: template
+    id: sys_esp_temperature
+    name: ESP Temperature
+    lambda: return temperatureRead();
+    unit_of_measurement: °C
+    device_class: TEMPERATURE
+    update_interval: 60s
+
+
+  - platform: uptime
+    name: Uptime
+    id: sys_uptime
+    update_interval: 60s
+
+  - platform: template
+    id: esp_memory
+    icon: mdi:memory
+    name: ESP Free Memory
+    lambda: return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024;
+    unit_of_measurement: "kB"
+    state_class: measurement
+    entity_category: "diagnostic"
+
+  - platform: wifi_signal
+    name: RSSI
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
+
+  - platform: scd4x
+    id: scd40
+    co2:
+      name: "CO2"
+      id: "co2"
+    temperature:
+      name: SCD40 Temperature
+      id: scd40temperature
+      filters:
+        - lambda: return x - id(scd40_temperature_offset).state;
+    humidity:
+      name: SCD40 Humidity
+      id: scd40humidity
+      filters:
+        - lambda: return x - id(scd40_humidity_offset).state;
+    automatic_self_calibration: false
+    update_interval: 60s
+    measurement_mode: "periodic"
+    i2c_id: bus_a
+    ambient_pressure_compensation_source: bme280pressure
+
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature"
+      id: bme280temperature
+      filters:
+        - lambda: return x - id(bme280_temperature_offset).state;
+    pressure:
+      name: "BME280 Pressure"
+      id: bme280pressure
+    humidity:
+      name: "BME280 Humidity"
+      id: bme280humidity
+      filters:
+        - lambda: return x - id(bme280_humidity_offset).state;
+    update_interval: 60s
+    i2c_id: bus_a
+    address: 0x76
+
+  - platform: bme280
+    temperature:
+      name: "BME280 Temperature Calibrated"
+      id: bme280temperatureCalibrated
+      filters:
+      - calibrate_linear:
+         datapoints:
+          - 28.19 -> 20.6
+          - 28.28 -> 20.8
+          - 28.02 -> 20.8
+          - 28.33 -> 20.9
+          - 28.28 -> 21.0
+        
+    humidity:
+      name: "BME280 Humidity Calibrated"
+      id: bme280humidityCalibrated
+      filters:
+      - calibrate_linear:
+         datapoints:
+          - 37.59 -> 60.3
+          - 38.99 -> 63.5
+          - 38.69 -> 61.3
+    update_interval: 60s
+    i2c_id: bus_a
+    address: 0x76
+  
+  - platform: ltr390
+    uv:
+      name: "LTR390 UV"
+      id: ltr390uv
+    light:
+      name: "LTR390 Light"
+      id: ltr390light
+    uv_index:
+      name: "LTR390 UV Index"
+      id: ltr390uvindex
+    ambient_light:
+      name: "LTR390 Ambient Light"
+      id: ltr390ambientlight
+    update_interval: 60s
+
+
+  - platform: sen5x
+    id: sen54
+    pm_1_0:
+      name: " PM <1µm Weight concentration"
+      id: pm_1_0
+      accuracy_decimals: 1
+    pm_2_5:
+      name: " PM <2.5µm Weight concentration"
+      id: pm_2_5
+      accuracy_decimals: 1
+    pm_4_0:
+      name: " PM <4µm Weight concentration"
+      id: pm_4_0
+      accuracy_decimals: 1
+    pm_10_0:
+      name: " PM <10µm Weight concentration"
+      id: pm_10_0
+      accuracy_decimals: 1
+    temperature:
+      name: "Temperature"
+      accuracy_decimals: 1
+    humidity:
+      name: "Humidity"
+      accuracy_decimals: 0
+    voc:
+      name: "VOC"
+      algorithm_tuning:
+        index_offset: 100
+        learning_time_offset_hours: 12
+        learning_time_gain_hours: 12
+        gating_max_duration_minutes: 180
+        std_initial: 50
+        gain_factor: 230
+    temperature_compensation:
+      offset: 0
+      normalized_offset_slope: 0
+      time_constant: 0
+    acceleration_mode: low
+    store_baseline: true
+    address: 0x69
+    update_interval: 10s
+
+  
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812x
+    pin: GPIO3
+    num_leds: 1
+    name: "RGB Light"
+    method:
+      type: esp32_rmt
+      channel: 0
+
+
+
+time:
+  - platform: sntp
+    id: time_sntp
+
+button:
+  - platform: restart
+    icon: mdi:power-cycle
+    name: "ESP Reboot"
+
+  - platform: factory_reset
+    disabled_by_default: True
+    name: "Factory Reset ESP"
+    id: factory_reset_all
+
+
+
