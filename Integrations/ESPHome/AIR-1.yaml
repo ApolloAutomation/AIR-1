@@ -26,7 +26,7 @@ esphome:
 
 # Define Board
 esp32:
-  board: esp32-c3-devkitm-1
+  board: featheresp32-s2
   #board: esp32-c3-devkitm-1
   framework:
     type: arduino
@@ -89,8 +89,8 @@ web_server:
 
 # Set Up Key Ports For Communication
 i2c:
-  sda: GPIO6
-  scl: GPIO7
+  sda: GPIO13
+  scl: GPIO12
   id: bus_a
 
 
@@ -350,6 +350,21 @@ sensor:
     store_baseline: true
     address: 0x69
     update_interval: 10s
+
+  - platform: mics_4514
+    nitrogen_dioxide:
+      name: Nitrogen Dioxide
+    carbon_monoxide:
+      name: Carbon Monoxide
+    hydrogen:
+      name: Hydrogen
+    ethanol:
+      name: Ethanol
+    methane:
+      name: Methane
+    ammonia:
+      name: Ammonia
+    update_interval: 60s
 
   
 light:

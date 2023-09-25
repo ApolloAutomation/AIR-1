@@ -32,3 +32,4 @@
 *.app
 Integrations/ESPHome/.DS_Store
 Integrations/.DS_Store
+.DS_Store
