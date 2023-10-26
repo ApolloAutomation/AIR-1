@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.9211"
+  version:  "23.10251"
   device_description: ${name} made by Apollo Automation - version ${version}.
   
 esphome:
@@ -26,8 +26,8 @@ esphome:
 
 # Define Board
 esp32:
-  board: featheresp32-s2
-  #board: esp32-c3-devkitm-1
+  #board: featheresp32-s2
+  board: esp32-c3-devkitm-1
   framework:
     type: arduino
   
@@ -45,15 +45,7 @@ globals:
 # Enable Home Assistant API
 # Also Add Buzzer Service Connection
 api:
-
   services:
-    - service: play_buzzer
-      variables:
-        song_str: string
-      then:
-        - rtttl.play:
-            rtttl: !lambda 'return song_str;'
-
     #Co2 Calibration Service
     - service: calibrate_co2_value
       variables:
@@ -89,71 +81,13 @@ web_server:
 
 # Set Up Key Ports For Communication
 i2c:
-  sda: GPIO13
-  scl: GPIO12
+  sda: GPIO1
+  scl: GPIO0
   id: bus_a
 
 
 # Numbers For Configuration
 number:
-
-  #Temperature Offsets
-  - platform: template
-    name: SCD40 Temperature Offset
-    id: scd40_temperature_offset
-    restore_value: true
-    initial_value: 13.13
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "°C"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-
-  - platform: template
-    name: SCD40 Humidity Offset
-    id: scd40_humidity_offset
-    restore_value: true
-    initial_value: -38.51
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "%"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-
-  - platform: template
-    name: BME280 Humidity Offset
-    id: bme280_humidity_offset
-    restore_value: true
-    initial_value: -23.19
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "%"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-
-  - platform: template
-    name: BME280 Temperature Offset
-    id: bme280_temperature_offset
-    restore_value: true
-    initial_value: 7.11
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "°C"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-
   - platform: template
     name: Co2 Calibration Number
     id: co2_calibration_number
@@ -236,78 +170,25 @@ sensor:
     temperature:
       name: SCD40 Temperature
       id: scd40temperature
-      filters:
-        - lambda: return x - id(scd40_temperature_offset).state;
     humidity:
       name: SCD40 Humidity
       id: scd40humidity
-      filters:
-        - lambda: return x - id(scd40_humidity_offset).state;
     automatic_self_calibration: false
     update_interval: 60s
     measurement_mode: "periodic"
     i2c_id: bus_a
-    ambient_pressure_compensation_source: bme280pressure
+    ambient_pressure_compensation_source: dps310pressure
 
-  - platform: bme280
+  - platform: dps310
     temperature:
-      name: "BME280 Temperature"
-      id: bme280temperature
-      filters:
-        - lambda: return x - id(bme280_temperature_offset).state;
+      name: "DPS310 Temperature"
+      id: dps310temperature
     pressure:
-      name: "BME280 Pressure"
-      id: bme280pressure
-    humidity:
-      name: "BME280 Humidity"
-      id: bme280humidity
-      filters:
-        - lambda: return x - id(bme280_humidity_offset).state;
-    update_interval: 60s
+      name: "DPS310 Pressure"
+      id: dps310pressure
+    update_interval: 30s
     i2c_id: bus_a
-    address: 0x76
-
-  - platform: bme280
-    temperature:
-      name: "BME280 Temperature Calibrated"
-      id: bme280temperatureCalibrated
-      filters:
-      - calibrate_linear:
-         datapoints:
-          - 28.19 -> 20.6
-          - 28.28 -> 20.8
-          - 28.02 -> 20.8
-          - 28.33 -> 20.9
-          - 28.28 -> 21.0
-        
-    humidity:
-      name: "BME280 Humidity Calibrated"
-      id: bme280humidityCalibrated
-      filters:
-      - calibrate_linear:
-         datapoints:
-          - 37.59 -> 60.3
-          - 38.99 -> 63.5
-          - 38.69 -> 61.3
-    update_interval: 60s
-    i2c_id: bus_a
-    address: 0x76
-  
-  - platform: ltr390
-    uv:
-      name: "LTR390 UV"
-      id: ltr390uv
-    light:
-      name: "LTR390 Light"
-      id: ltr390light
-    uv_index:
-      name: "LTR390 UV Index"
-      id: ltr390uvindex
-    ambient_light:
-      name: "LTR390 Ambient Light"
-      id: ltr390ambientlight
-    update_interval: 60s
-
+    address: 0x77
 
   - platform: sen5x
     id: sen54
@@ -372,7 +253,7 @@ light:
     type: GRB
     variant: WS2812x
     pin: GPIO3
-    num_leds: 1
+    num_leds: 2
     name: "RGB Light"
     method:
       type: esp32_rmt
