@@ -188,34 +188,33 @@ sensor:
       id: dps310pressure
     update_interval: 30s
     i2c_id: bus_a
-    address: 0x77
 
   - platform: sen5x
-    id: sen54
+    id: sen55
     pm_1_0:
-      name: " PM <1µm Weight concentration"
+      name: "PM <1µm Weight concentration"
       id: pm_1_0
       accuracy_decimals: 1
     pm_2_5:
-      name: " PM <2.5µm Weight concentration"
+      name: "PM <2.5µm Weight concentration"
       id: pm_2_5
       accuracy_decimals: 1
     pm_4_0:
-      name: " PM <4µm Weight concentration"
+      name: "PM <4µm Weight concentration"
       id: pm_4_0
       accuracy_decimals: 1
     pm_10_0:
-      name: " PM <10µm Weight concentration"
+      name: "PM <10µm Weight concentration"
       id: pm_10_0
       accuracy_decimals: 1
     temperature:
-      name: "Temperature"
+      name: "SEN55 Temperature"
       accuracy_decimals: 1
     humidity:
-      name: "Humidity"
+      name: "SEN55 Humidity"
       accuracy_decimals: 0
     voc:
-      name: "VOC"
+      name: "SEN55 VOC"
       algorithm_tuning:
         index_offset: 100
         learning_time_offset_hours: 12
