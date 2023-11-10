@@ -57,6 +57,7 @@ api:
 
 
 logger:
+  level: none
 
 ota:
   password: "apolloautomation"
@@ -64,7 +65,8 @@ ota:
 
 wifi:
 
-  power_save_mode: none
+  power_save_mode: LIGHT
+  output_power: 10dB
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -226,6 +228,8 @@ sensor:
       offset: 0
       normalized_offset_slope: 0
       time_constant: 0
+    nox:
+      name: "SEN55 NOX"
     acceleration_mode: low
     store_baseline: true
     address: 0x69
