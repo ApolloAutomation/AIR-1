@@ -1,13 +1,13 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.10251"
+  version:  "23.11.16.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   
 esphome:
   name: "${name}"
-  friendly_name: Apollo Air Mk1 (AIR-1)
-  comment: Apollo Air Mk1 (AIR-1)
+  friendly_name: Apollo AIR-1
+  comment: Apollo AIR-1
   name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
@@ -26,15 +26,13 @@ esphome:
 
 # Define Board
 esp32:
-  #board: featheresp32-s2
   board: esp32-c3-devkitm-1
   framework:
     type: arduino
   
-#dashboard_import:
-  #package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/MSR-1.yaml
-  #import_full_config: false
-
+dashboard_import:
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
+  import_full_config: false
 
 globals:
   - id: cpu_speed
@@ -43,7 +41,6 @@ globals:
     initial_value: "0"
 
 # Enable Home Assistant API
-# Also Add Buzzer Service Connection
 api:
   services:
     #Co2 Calibration Service
@@ -54,19 +51,17 @@ api:
         - scd4x.perform_forced_calibration:
             value: !lambda 'return co2_ppm;'
             id: scd40
-
+    - service: sen55_clean
+      then:
+        - sen5x.start_fan_autoclean: sen55
 
 logger:
-  level: none
 
 ota:
   password: "apolloautomation"
   safe_mode: false
 
 wifi:
-
-  power_save_mode: LIGHT
-  output_power: 10dB
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -107,16 +102,19 @@ number:
       - scd4x.perform_forced_calibration:
           value: !lambda 'return id(co2_calibration_number).state;'
           id: scd40
-
-  
-
-# Buzzer
-output:
-  - platform: ledc
-    pin: GPIO10
-    id: buzzer
-rtttl:
- output: buzzer
+  - platform: template
+    name: SEN55 Temperature Offset
+    id: sen55_temperature_offset
+    restore_value: true
+    initial_value: 8.0
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
 
 
 
@@ -169,12 +167,6 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
-    temperature:
-      name: SCD40 Temperature
-      id: scd40temperature
-    humidity:
-      name: SCD40 Humidity
-      id: scd40humidity
     automatic_self_calibration: false
     update_interval: 60s
     measurement_mode: "periodic"
@@ -182,12 +174,11 @@ sensor:
     ambient_pressure_compensation_source: dps310pressure
 
   - platform: dps310
-    temperature:
-      name: "DPS310 Temperature"
-      id: dps310temperature
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
+    temperature:
+      name: "DPS310 Temperature"
     update_interval: 30s
     i2c_id: bus_a
 
@@ -212,6 +203,8 @@ sensor:
     temperature:
       name: "SEN55 Temperature"
       accuracy_decimals: 1
+      filters:
+        - lambda: return x - id(sen55_temperature_offset).state;
     humidity:
       name: "SEN55 Humidity"
       accuracy_decimals: 0
@@ -256,12 +249,11 @@ light:
     type: GRB
     variant: WS2812x
     pin: GPIO3
-    num_leds: 2
+    num_leds: 1
     name: "RGB Light"
     method:
       type: esp32_rmt
       channel: 0
-
 
 
 time:
@@ -277,6 +269,3 @@ button:
     disabled_by_default: True
     name: "Factory Reset ESP"
     id: factory_reset_all
-
-
-
