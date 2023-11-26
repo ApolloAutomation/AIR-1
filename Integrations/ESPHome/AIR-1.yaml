@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.11.16.1"
+  version:  "23.11.25.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   
 esphome:
@@ -17,6 +17,8 @@ esphome:
     then:
       - lambda: |-
           id(cpu_speed) = ESP.getCpuFreqMHz();
+      - lambda: |-
+          id(sen55).set_temperature_compensation(id(sen55_temperature_offset).state, 0, 0);
 
   project:
     name: "ApolloAutomation.AIR-1"
@@ -86,27 +88,10 @@ i2c:
 # Numbers For Configuration
 number:
   - platform: template
-    name: Co2 Calibration Number
-    id: co2_calibration_number
-    restore_value: true
-    initial_value: 419.0
-    min_value: 0.0
-    max_value: 1000.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "ppm"
-    optimistic: true
-    mode: box
-    update_interval: never
-    step: 10
-    set_action:
-      - scd4x.perform_forced_calibration:
-          value: !lambda 'return id(co2_calibration_number).state;'
-          id: scd40
-  - platform: template
     name: SEN55 Temperature Offset
     id: sen55_temperature_offset
     restore_value: true
-    initial_value: 8.0
+    initial_value: 6.0
     min_value: -70.0
     max_value: 70.0
     entity_category: "CONFIG"
@@ -115,6 +100,9 @@ number:
     update_interval: never
     step: 0.1
     mode: box
+    set_action:
+      - lambda: |-
+          id(sen55).set_temperature_compensation(x, 0, 0);
 
 
 
@@ -217,10 +205,6 @@ sensor:
         gating_max_duration_minutes: 180
         std_initial: 50
         gain_factor: 230
-    temperature_compensation:
-      offset: 0
-      normalized_offset_slope: 0
-      time_constant: 0
     nox:
       name: "SEN55 NOX"
     acceleration_mode: low
@@ -241,7 +225,7 @@ sensor:
       name: Methane
     ammonia:
       name: Ammonia
-    update_interval: 60s
+    update_interval: 10s
 
   
 light:
@@ -249,7 +233,7 @@ light:
     type: GRB
     variant: WS2812x
     pin: GPIO3
-    num_leds: 1
+    num_leds: 3
     name: "RGB Light"
     method:
       type: esp32_rmt
@@ -269,3 +253,15 @@ button:
     disabled_by_default: True
     name: "Factory Reset ESP"
     id: factory_reset_all
+
+  - platform: template
+    name: "Calibrate SCD40 To 400ppm"
+    id: set_SCD40_calibrate
+    on_press:
+      - scd4x.perform_forced_calibration:
+          value: 400
+          id: scd40
+
+
+
+      
