@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.11.25.1"
+  version:  "23.12.5.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   
 esphome:
