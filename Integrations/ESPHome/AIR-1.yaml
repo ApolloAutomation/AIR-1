@@ -17,8 +17,6 @@ esphome:
     then:
       - lambda: |-
           id(cpu_speed) = ESP.getCpuFreqMHz();
-      - lambda: |-
-          id(sen55).set_temperature_compensation(id(sen55_temperature_offset).state, 0, 0);
 
   project:
     name: "ApolloAutomation.AIR-1"
@@ -120,14 +118,10 @@ sensor:
     lambda: |-
       return (id(cpu_speed));
     entity_category: "diagnostic"
-
-  - platform: template
+  
+  - platform: internal_temperature
+    name: "ESP Temperature"
     id: sys_esp_temperature
-    name: ESP Temperature
-    lambda: return temperatureRead();
-    unit_of_measurement: °C
-    device_class: TEMPERATURE
-    update_interval: 60s
 
 
   - platform: uptime
@@ -162,11 +156,12 @@ sensor:
     ambient_pressure_compensation_source: dps310pressure
 
   - platform: dps310
+    id: dps310
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
     temperature:
-      name: "DPS310 Temperature"
+      id: dps310temperature
     update_interval: 30s
     i2c_id: bus_a
 
@@ -213,6 +208,7 @@ sensor:
     update_interval: 10s
 
   - platform: mics_4514
+    id: mics4514
     nitrogen_dioxide:
       name: Nitrogen Dioxide
     carbon_monoxide:
@@ -230,6 +226,7 @@ sensor:
   
 light:
   - platform: neopixelbus
+    id: rgb_light
     type: GRB
     variant: WS2812x
     pin: GPIO3
@@ -262,6 +259,8 @@ button:
           value: 400
           id: scd40
 
-
-
-      
+  - platform: template
+    name: "Clean SEN55"
+    id: set_SCD40_calibrate
+    on_press:
+      - sen5x.start_fan_autoclean: sen55
