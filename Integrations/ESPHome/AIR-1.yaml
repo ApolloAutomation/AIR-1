@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.12.5.1"
+  version:  "23.12.6.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   
 esphome:
@@ -12,23 +12,17 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
 
-  on_boot:
-  - priority: 900.0
-    then:
-      - lambda: |-
-          id(cpu_speed) = ESP.getCpuFreqMHz();
 
   project:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2023.8.1
+  min_version: 2023.11.1
 
-# Define Board
 esp32:
   board: esp32-c3-devkitm-1
   framework:
-    type: arduino
+      type: esp-idf
   
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
@@ -56,13 +50,18 @@ api:
         - sen5x.start_fan_autoclean: sen55
 
 logger:
+  hardware_uart: USB_SERIAL_JTAG
 
 ota:
   password: "apolloautomation"
   safe_mode: false
 
 wifi:
-
+  on_connect:
+    - delay: 5s # Gives time for improv results to be transmitted
+    - ble.disable:
+  on_disconnect:
+    - ble.enable:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Apollo AIR1 Hotspot"
@@ -74,16 +73,16 @@ improv_serial:
 web_server:
   port: 80
 
+esp32_improv:
+  authorizer: none
 
 
-# Set Up Key Ports For Communication
 i2c:
   sda: GPIO1
   scl: GPIO0
   id: bus_a
 
 
-# Numbers For Configuration
 number:
   - platform: template
     name: SEN55 Temperature Offset
@@ -156,7 +155,7 @@ sensor:
     ambient_pressure_compensation_source: dps310pressure
 
   - platform: dps310
-    id: dps310
+    id: dps_310
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
@@ -225,17 +224,30 @@ sensor:
 
   
 light:
-  - platform: neopixelbus
+  - platform: esp32_rmt_led_strip
     id: rgb_light
-    type: GRB
-    variant: WS2812x
-    pin: GPIO3
-    num_leds: 3
     name: "RGB Light"
-    method:
-      type: esp32_rmt
-      channel: 0
-
+    disabled_by_default: true
+    entity_category: config
+    pin: GPIO3
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 3
+    rgb_order: grb
+    rmt_channel: 0
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
 
 time:
   - platform: sntp
@@ -261,6 +273,6 @@ button:
 
   - platform: template
     name: "Clean SEN55"
-    id: set_SCD40_calibrate
+    id: clean_sen55
     on_press:
       - sen5x.start_fan_autoclean: sen55
