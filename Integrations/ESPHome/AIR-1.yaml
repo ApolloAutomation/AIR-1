@@ -281,14 +281,14 @@ interval:
                 id: rgb_light
 
   - interval: 1s
-      then:
-        - if:
-            condition:
-              - binary_sensor.is_off: ink_ha_connected
-              - lambda: 'return id(sys_uptime).state > 30;'
-              - lambda: 'return id(sys_uptime).state < 35;'
+    then:
+      - if:
+          condition:
+            - binary_sensor.is_off: ink_ha_connected
+            - lambda: 'return id(sys_uptime).state > 30;'
+            - lambda: 'return id(sys_uptime).state < 35;'
 
-            then:
+          then:
 
-              - light.turn_off:
-                  id: rgb_light
+            - light.turn_off:
+                id: rgb_light
