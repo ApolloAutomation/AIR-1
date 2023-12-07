@@ -219,7 +219,6 @@ light:
   - platform: esp32_rmt_led_strip
     id: rgb_light
     name: "RGB Light"
-    entity_category: config
     pin: GPIO3
     rmt_channel: 0
     default_transition_length: 0s
