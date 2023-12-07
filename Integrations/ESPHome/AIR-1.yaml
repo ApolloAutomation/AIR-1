@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "23.12.6.1"
+  version: "23.12.7.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -266,3 +266,29 @@ button:
     id: clean_sen55
     on_press:
       - sen5x.start_fan_autoclean: sen55
+
+
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            - binary_sensor.is_off: ink_ha_connected
+            - lambda: 'return id(sys_uptime).state < 30;'
+
+          then:
+            - light.toggle:
+                id: rgb_light
+
+  - interval: 1s
+      then:
+        - if:
+            condition:
+              - binary_sensor.is_off: ink_ha_connected
+              - lambda: 'return id(sys_uptime).state > 30;'
+              - lambda: 'return id(sys_uptime).state < 35;'
+
+            then:
+
+              - light.turn_off:
+                  id: rgb_light
