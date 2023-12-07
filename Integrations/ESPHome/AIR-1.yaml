@@ -1,9 +1,9 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.12.6.1"
+  version: "23.12.6.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
-  
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
@@ -11,7 +11,6 @@ esphome:
   name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
-
 
   project:
     name: "ApolloAutomation.AIR-1"
@@ -22,8 +21,8 @@ esphome:
 esp32:
   board: esp32-c3-devkitm-1
   framework:
-      type: esp-idf
-  
+    type: esp-idf
+
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
   import_full_config: false
@@ -43,7 +42,7 @@ api:
         co2_ppm: float
       then:
         - scd4x.perform_forced_calibration:
-            value: !lambda 'return co2_ppm;'
+            value: !lambda "return co2_ppm;"
             id: scd40
     - service: sen55_clean
       then:
@@ -76,12 +75,10 @@ web_server:
 esp32_improv:
   authorizer: none
 
-
 i2c:
   sda: GPIO1
   scl: GPIO0
   id: bus_a
-
 
 number:
   - platform: template
@@ -101,13 +98,10 @@ number:
       - lambda: |-
           id(sen55).set_temperature_compensation(x, 0, 0);
 
-
-
 binary_sensor:
   - platform: status
     name: Online
     id: ink_ha_connected
-  
 
 sensor:
   - platform: template
@@ -117,11 +111,10 @@ sensor:
     lambda: |-
       return (id(cpu_speed));
     entity_category: "diagnostic"
-  
+
   - platform: internal_temperature
     name: "ESP Temperature"
     id: sys_esp_temperature
-
 
   - platform: uptime
     name: Uptime
@@ -222,19 +215,17 @@ sensor:
       name: Ammonia
     update_interval: 10s
 
-  
 light:
   - platform: esp32_rmt_led_strip
     id: rgb_light
     name: "RGB Light"
-    disabled_by_default: true
     entity_category: config
     pin: GPIO3
+    rmt_channel: 0
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 3
     rgb_order: grb
-    rmt_channel: 0
     effects:
       - pulse:
           name: "Slow Pulse"
