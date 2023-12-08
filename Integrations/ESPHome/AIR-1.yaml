@@ -32,9 +32,17 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
+  - id: cycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
 
 # Enable Home Assistant API
 api:
+  on_client_connected:
+    - delay: 1s
+    - light.turn_off: rgb_light
+    - lambda: 'id(cycleCounter) = 30;'
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -50,6 +58,8 @@ api:
 
 logger:
   hardware_uart: USB_SERIAL_JTAG
+  logs:
+    component: ERROR
 
 ota:
   password: "apolloautomation"
@@ -130,6 +140,7 @@ sensor:
     state_class: measurement
     entity_category: "diagnostic"
 
+
   - platform: wifi_signal
     name: RSSI
     id: wifi_signal_db
@@ -185,6 +196,7 @@ sensor:
       accuracy_decimals: 0
     voc:
       name: "SEN55 VOC"
+      id: sen55_voc
       algorithm_tuning:
         index_offset: 100
         learning_time_offset_hours: 12
@@ -267,28 +279,49 @@ button:
     on_press:
       - sen5x.start_fan_autoclean: sen55
 
+text_sensor:
+    # Convert VOC Index To Text: 
+    # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
+  - platform: template
+    name: "VOC Quality"
+    id: voc_quality
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(sen55_voc).state < 80) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 120) {
+        return std::string("Average");} 
+      else if (id(sen55_voc).state < 200) {
+        return std::string("Poor");} 
+      else if (id(sen55_voc).state < 300) {
+        return std::string("Very Poor");} 
+      else {
+        return std::string("Inadequate");}
 
+
+#Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:
   - interval: 1s
     then:
       - if:
           condition:
             - binary_sensor.is_off: ink_ha_connected
-            - lambda: 'return id(sys_uptime).state < 30;'
+            - lambda: 'return id(cycleCounter) < 30;'
 
           then:
             - light.toggle:
                 id: rgb_light
+            - lambda: 'id(cycleCounter) += 1;'
 
   - interval: 1s
     then:
       - if:
           condition:
             - binary_sensor.is_off: ink_ha_connected
-            - lambda: 'return id(sys_uptime).state > 30;'
-            - lambda: 'return id(sys_uptime).state < 35;'
+            - lambda: 'return id(cycleCounter) > 30;'
+            - lambda: 'return id(cycleCounter) < 31;'
 
           then:
-
             - light.turn_off:
                 id: rgb_light
+            - lambda: 'id(cycleCounter) += 1;'
