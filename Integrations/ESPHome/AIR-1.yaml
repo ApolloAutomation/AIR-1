@@ -298,6 +298,15 @@ text_sensor:
       else {
         return std::string("Inadequate");}
 
+switch:
+ - platform: template
+   name: "Startup Light Blink"
+   id: startup_light_blink
+   icon: mdi:lightbulb
+   restore_mode: RESTORE_DEFAULT_ON
+   optimistic: true
+   entity_category: "config"
+
 
 #Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:
@@ -307,6 +316,7 @@ interval:
           condition:
             - binary_sensor.is_off: ink_ha_connected
             - lambda: 'return id(cycleCounter) < 30;'
+            - switch.is_on: startup_light_blink
 
           then:
             - light.toggle:
@@ -320,6 +330,7 @@ interval:
             - binary_sensor.is_off: ink_ha_connected
             - lambda: 'return id(cycleCounter) > 30;'
             - lambda: 'return id(cycleCounter) < 31;'
+            - switch.is_on: startup_light_blink
 
           then:
             - light.turn_off:
