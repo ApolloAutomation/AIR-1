@@ -1,9 +1,9 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version:  "23.11.25.1"
+  version: "23.12.9.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
-  
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
@@ -12,26 +12,17 @@ esphome:
   platformio_options:
     board_build.flash_mode: dio
 
-  on_boot:
-  - priority: 900.0
-    then:
-      - lambda: |-
-          id(cpu_speed) = ESP.getCpuFreqMHz();
-      - lambda: |-
-          id(sen55).set_temperature_compensation(id(sen55_temperature_offset).state, 0, 0);
-
   project:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2023.8.1
+  min_version: 2023.11.1
 
-# Define Board
 esp32:
   board: esp32-c3-devkitm-1
   framework:
     type: arduino
-  
+
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
   import_full_config: false
@@ -41,9 +32,17 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
+  - id: cycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
 
 # Enable Home Assistant API
 api:
+  on_client_connected:
+    - delay: 1s
+    - light.turn_off: rgb_light
+    - lambda: 'id(cycleCounter) = 30;'
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -51,20 +50,26 @@ api:
         co2_ppm: float
       then:
         - scd4x.perform_forced_calibration:
-            value: !lambda 'return co2_ppm;'
+            value: !lambda "return co2_ppm;"
             id: scd40
     - service: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
 
 logger:
+  logs:
+    component: ERROR
 
 ota:
   password: "apolloautomation"
   safe_mode: false
 
 wifi:
-
+  on_connect:
+    - delay: 5s # Gives time for improv results to be transmitted
+    - ble.disable:
+  on_disconnect:
+    - ble.enable:
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Apollo AIR1 Hotspot"
@@ -76,16 +81,14 @@ improv_serial:
 web_server:
   port: 80
 
+esp32_improv:
+  authorizer: none
 
-
-# Set Up Key Ports For Communication
 i2c:
   sda: GPIO1
   scl: GPIO0
   id: bus_a
 
-
-# Numbers For Configuration
 number:
   - platform: template
     name: SEN55 Temperature Offset
@@ -100,17 +103,12 @@ number:
     update_interval: never
     step: 0.1
     mode: box
-    set_action:
-      - lambda: |-
-          id(sen55).set_temperature_compensation(x, 0, 0);
-
-
+    
 
 binary_sensor:
   - platform: status
     name: Online
     id: ink_ha_connected
-  
 
 sensor:
   - platform: template
@@ -121,14 +119,9 @@ sensor:
       return (id(cpu_speed));
     entity_category: "diagnostic"
 
-  - platform: template
+  - platform: internal_temperature
+    name: "ESP Temperature"
     id: sys_esp_temperature
-    name: ESP Temperature
-    lambda: return temperatureRead();
-    unit_of_measurement: °C
-    device_class: TEMPERATURE
-    update_interval: 60s
-
 
   - platform: uptime
     name: Uptime
@@ -143,6 +136,7 @@ sensor:
     unit_of_measurement: "kB"
     state_class: measurement
     entity_category: "diagnostic"
+
 
   - platform: wifi_signal
     name: RSSI
@@ -162,11 +156,12 @@ sensor:
     ambient_pressure_compensation_source: dps310pressure
 
   - platform: dps310
+    id: dps_310
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
     temperature:
-      name: "DPS310 Temperature"
+      id: dps310temperature
     update_interval: 30s
     i2c_id: bus_a
 
@@ -198,6 +193,7 @@ sensor:
       accuracy_decimals: 0
     voc:
       name: "SEN55 VOC"
+      id: sen55_voc
       algorithm_tuning:
         index_offset: 100
         learning_time_offset_hours: 12
@@ -212,7 +208,47 @@ sensor:
     address: 0x69
     update_interval: 10s
 
+  - platform: template
+    name: "PM 0.3 To 1 µm"
+    id: pm0_3_to_1
+    disabled_by_default: true
+    lambda: return id(pm_1_0).state;
+    unit_of_measurement: "µg/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+  
+  - platform: template
+    name: "PM 1 To 2.5 µm"
+    id: pm1_to_2_5
+    disabled_by_default: true
+    lambda: return id(pm_2_5).state - id(pm_1_0).state;
+    unit_of_measurement: "µg/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+  
+  - platform: template
+    name: "PM 2.5 To 4 µm"
+    id: pm2_5_to_4
+    disabled_by_default: true
+    lambda: return id(pm_4_0).state - id(pm_2_5).state;
+    unit_of_measurement: "µg/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+
+  - platform: template
+    name: "PM 4 To 10 µm"
+    id: pm4_to_10
+    disabled_by_default: true
+    lambda: return id(pm_10_0).state - id(pm_4_0).state;
+    unit_of_measurement: "µg/m³"
+    icon: mdi:air-filter
+    update_interval: 10s
+
   - platform: mics_4514
+    id: mics4514
     nitrogen_dioxide:
       name: Nitrogen Dioxide
     carbon_monoxide:
@@ -227,18 +263,29 @@ sensor:
       name: Ammonia
     update_interval: 10s
 
-  
 light:
-  - platform: neopixelbus
-    type: GRB
-    variant: WS2812x
-    pin: GPIO3
-    num_leds: 3
+  - platform: esp32_rmt_led_strip
+    id: rgb_light
     name: "RGB Light"
-    method:
-      type: esp32_rmt
-      channel: 0
-
+    pin: GPIO3
+    rmt_channel: 0
+    default_transition_length: 0s
+    chipset: WS2812
+    num_leds: 3
+    rgb_order: grb
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
 
 time:
   - platform: sntp
@@ -262,6 +309,66 @@ button:
           value: 400
           id: scd40
 
+  - platform: template
+    name: "Clean SEN55"
+    id: clean_sen55
+    on_press:
+      - sen5x.start_fan_autoclean: sen55
+
+text_sensor:
+    # Convert VOC Index To Text: 
+    # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
+  - platform: template
+    name: "VOC Quality"
+    id: voc_quality
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(sen55_voc).state < 80) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 120) {
+        return std::string("Average");} 
+      else if (id(sen55_voc).state < 200) {
+        return std::string("Poor");} 
+      else if (id(sen55_voc).state < 300) {
+        return std::string("Very Poor");} 
+      else {
+        return std::string("Inadequate");}
+
+switch:
+ - platform: template
+   name: "Startup Light Blink"
+   id: startup_light_blink
+   icon: mdi:lightbulb
+   restore_mode: RESTORE_DEFAULT_ON
+   optimistic: true
+   entity_category: "config"
 
 
-      
+#Used To Control RGB Light On Startup. Tells User Status Of Device
+interval:
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            - binary_sensor.is_off: ink_ha_connected
+            - lambda: 'return id(cycleCounter) < 30;'
+            - switch.is_on: startup_light_blink
+
+          then:
+            - light.toggle:
+                id: rgb_light
+            - lambda: 'id(cycleCounter) += 1;'
+
+  - interval: 1s
+    then:
+      - if:
+          condition:
+            - binary_sensor.is_off: ink_ha_connected
+            - lambda: 'return id(cycleCounter) > 30;'
+            - lambda: 'return id(cycleCounter) < 31;'
+            - switch.is_on: startup_light_blink
+
+          then:
+            - light.turn_off:
+                id: rgb_light
+            - lambda: 'id(cycleCounter) += 1;'
