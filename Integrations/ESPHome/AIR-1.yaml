@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "23.12.9.1"
+  version: "23.12.11.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -324,15 +324,15 @@ text_sensor:
     icon: mdi:air-filter
     lambda: |-
       if (id(sen55_voc).state < 80) {
-        return std::string("Good");} 
+        return std::string("Improved");} 
       else if (id(sen55_voc).state < 120) {
-        return std::string("Average");} 
+        return std::string("Normal");} 
       else if (id(sen55_voc).state < 200) {
-        return std::string("Poor");} 
+        return std::string("Abnormal");} 
       else if (id(sen55_voc).state < 300) {
-        return std::string("Very Poor");} 
+        return std::string("Very abnormal");} 
       else {
-        return std::string("Inadequate");}
+        return std::string("Extremely abnormal");}
 
 switch:
  - platform: template
