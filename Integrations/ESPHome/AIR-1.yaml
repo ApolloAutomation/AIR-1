@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "23.12.21.1"
+  version: "24.1.4.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -103,6 +103,19 @@ number:
     update_interval: never
     step: 0.1
     mode: box
+  - platform: template
+    name: SEN55 Humidity Offset
+    id: sen55_humidity_offset
+    restore_value: true
+    initial_value: 0
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
     
 
 binary_sensor:
@@ -190,6 +203,8 @@ sensor:
         - lambda: return x - id(sen55_temperature_offset).state;
     humidity:
       name: "SEN55 Humidity"
+      filters:
+        - lambda: return x - id(sen55_humidity_offset).state;
       accuracy_decimals: 0
     voc:
       name: "SEN55 VOC"
