@@ -1,0 +1,33 @@
+name: 'Discord Publisher'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  check-links:
+    runs-on: ${{ fromJSON('["ubuntu-latest", "self-hosted"]')[github.repository == 'github/docs-internal'] }}
+    steps:
+      - name: Discord Commits
+        uses: Sniddl/discord-commits@v1.6
+        with:
+          # discord webhook url without /github
+          webhook: ${{ secrets.DiscordWebhook }}
+          # A general message that is displayed for all commits. Defaults to the repo name.
+          message: 'AIR-1'
+          # Boolean - Include extra embeds provided from templates.
+          #include-extras: # optional
+          # The name of of a premade template.
+          #template: # optional
+          # Boolean - only show the last commit.
+          #last-commit-only: # optional
