@@ -16,6 +16,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
+
   min_version: 2023.11.1
 
 esp32:
@@ -60,10 +61,6 @@ api:
       then:
         - sen5x.start_fan_autoclean: sen55
 
-logger:
-  logs:
-    component: ERROR
-
 ota:
   password: "apolloautomation"
   safe_mode: false
@@ -71,22 +68,17 @@ ota:
 wifi:
   on_connect:
     - delay: 5s # Gives time for improv results to be transmitted
-    - ble.disable:
-  on_disconnect:
-    - ble.enable:
+
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
 captive_portal:
 
-improv_serial:
 
 web_server:
   port: 80
 
-esp32_improv:
-  authorizer: none
 
 i2c:
   sda: GPIO1
@@ -382,7 +374,7 @@ switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
-
+ 
 #Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:
   - interval: 1s
@@ -411,3 +403,6 @@ interval:
             - light.turn_off:
                 id: rgb_light
             - lambda: 'id(cycleCounter) += 1;'
+
+
+  
