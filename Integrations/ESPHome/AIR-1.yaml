@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.3.1.1"
+  version: "24.3.21.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -16,6 +16,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
+
   min_version: 2023.11.1
 
 esp32:
@@ -28,10 +29,6 @@ dashboard_import:
   import_full_config: false
 
 globals:
-  - id: cpu_speed
-    type: int
-    restore_value: no
-    initial_value: "0"
   - id: cycleCounter
     type: int
     restore_value: no
@@ -60,10 +57,6 @@ api:
       then:
         - sen5x.start_fan_autoclean: sen55
 
-logger:
-  logs:
-    component: ERROR
-
 ota:
   password: "apolloautomation"
   safe_mode: false
@@ -71,22 +64,17 @@ ota:
 wifi:
   on_connect:
     - delay: 5s # Gives time for improv results to be transmitted
-    - ble.disable:
-  on_disconnect:
-    - ble.enable:
+
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
 captive_portal:
 
-improv_serial:
 
 web_server:
   port: 80
 
-esp32_improv:
-  authorizer: none
 
 i2c:
   sda: GPIO1
@@ -148,14 +136,6 @@ binary_sensor:
             }
 
 sensor:
-  - platform: template
-    name: "ESP Cpu Speed"
-    accuracy_decimals: 0
-    unit_of_measurement: Mhz
-    lambda: |-
-      return (id(cpu_speed));
-    entity_category: "diagnostic"
-
   - platform: internal_temperature
     name: "ESP Temperature"
     id: sys_esp_temperature
@@ -164,16 +144,6 @@ sensor:
     name: Uptime
     id: sys_uptime
     update_interval: 60s
-
-  - platform: template
-    id: esp_memory
-    icon: mdi:memory
-    name: ESP Free Memory
-    lambda: return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024;
-    unit_of_measurement: "kB"
-    state_class: measurement
-    entity_category: "diagnostic"
-
 
   - platform: wifi_signal
     name: RSSI
@@ -382,7 +352,7 @@ switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
-
+ 
 #Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:
   - interval: 1s
@@ -411,3 +381,6 @@ interval:
             - light.turn_off:
                 id: rgb_light
             - lambda: 'id(cycleCounter) += 1;'
+
+
+  
