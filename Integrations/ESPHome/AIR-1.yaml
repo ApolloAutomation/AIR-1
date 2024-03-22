@@ -29,10 +29,6 @@ dashboard_import:
   import_full_config: false
 
 globals:
-  - id: cpu_speed
-    type: int
-    restore_value: no
-    initial_value: "0"
   - id: cycleCounter
     type: int
     restore_value: no
@@ -140,14 +136,6 @@ binary_sensor:
             }
 
 sensor:
-  - platform: template
-    name: "ESP Cpu Speed"
-    accuracy_decimals: 0
-    unit_of_measurement: Mhz
-    lambda: |-
-      return (id(cpu_speed));
-    entity_category: "diagnostic"
-
   - platform: internal_temperature
     name: "ESP Temperature"
     id: sys_esp_temperature
@@ -156,16 +144,6 @@ sensor:
     name: Uptime
     id: sys_uptime
     update_interval: 60s
-
-  - platform: template
-    id: esp_memory
-    icon: mdi:memory
-    name: ESP Free Memory
-    lambda: return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024;
-    unit_of_measurement: "kB"
-    state_class: measurement
-    entity_category: "diagnostic"
-
 
   - platform: wifi_signal
     name: RSSI
