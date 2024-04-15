@@ -25,7 +25,7 @@ esp32:
     type: arduino
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
+  package_import_url: github://jrhubott/AIR-1/Integrations/ESPHome/AIR-1.yaml
   import_full_config: false
 
 globals:
