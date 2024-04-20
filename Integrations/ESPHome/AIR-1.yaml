@@ -276,8 +276,8 @@ light:
     effects:
       - pulse:
           name: "Slow Pulse"
-          transition_length: 250ms
-          update_interval: 250ms
+          transition_length: 500ms
+          update_interval: 500ms
           min_brightness: 50%
           max_brightness: 100%
       - pulse:
