@@ -281,6 +281,12 @@ light:
           min_brightness: 50%
           max_brightness: 100%
       - pulse:
+          name: "Pulse"
+          transition_length: 500ms
+          update_interval: 500ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
           name: "Fast Pulse"
           transition_length: 100ms
           update_interval: 100ms
