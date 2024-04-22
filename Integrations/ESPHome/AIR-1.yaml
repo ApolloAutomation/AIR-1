@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.3.21.1"
+  version: "24.4.22.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -75,6 +75,8 @@ captive_portal:
 web_server:
   port: 80
 
+logger:
+  level: NONE
 
 i2c:
   sda: GPIO1
@@ -103,7 +105,7 @@ number:
     min_value: -70.0
     max_value: 70.0
     entity_category: "CONFIG"
-    unit_of_measurement: "°C"
+    unit_of_measurement: "%"
     optimistic: true
     update_interval: never
     step: 0.1
