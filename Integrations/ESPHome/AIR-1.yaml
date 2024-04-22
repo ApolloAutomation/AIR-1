@@ -251,16 +251,22 @@ sensor:
     id: mics4514
     nitrogen_dioxide:
       name: Nitrogen Dioxide
+      id: nitrogen_dioxide
     carbon_monoxide:
       name: Carbon Monoxide
+      id: carbon_monoxide
     hydrogen:
       name: Hydrogen
+      id: hydrogen
     ethanol:
       name: Ethanol
+      id: ethanol
     methane:
       name: Methane
+      id: methane
     ammonia:
       name: Ammonia
+      id: ammonia
     update_interval: 10s
 
 light:
