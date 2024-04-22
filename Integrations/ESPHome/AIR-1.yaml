@@ -203,6 +203,7 @@ sensor:
         gain_factor: 230
     nox:
       name: "SEN55 NOX"
+      id: sen55_nox
     acceleration_mode: low
     store_baseline: true
     address: 0x69
