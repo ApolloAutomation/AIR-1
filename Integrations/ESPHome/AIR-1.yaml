@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.4.22.1"
+  version: "24.4.24.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -134,7 +134,6 @@ binary_sensor:
             if (millis() - id(button_press_timestamp) >= 5000) {
               // Remove Wifi
               id(factory_reset_switch).turn_on();
-              
             }
 
 sensor:
@@ -327,6 +326,7 @@ button:
 text_sensor:
     # Convert VOC Index To Text: 
     # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
+    # https://sensirion.com/media/documents/ACD82D45/6294DFC0/Info_Note_Integration_VOC_NOx_Sensor.pdf
   - platform: template
     name: "VOC Quality"
     id: voc_quality
@@ -334,11 +334,11 @@ text_sensor:
     lambda: |-
       if (id(sen55_voc).state < 80) {
         return std::string("Improved");} 
-      else if (id(sen55_voc).state < 120) {
+      else if (id(sen55_voc).state < 150) {
         return std::string("Normal");} 
-      else if (id(sen55_voc).state < 200) {
+      else if (id(sen55_voc).state < 250) {
         return std::string("Abnormal");} 
-      else if (id(sen55_voc).state < 300) {
+      else if (id(sen55_voc).state < 400) {
         return std::string("Very abnormal");} 
       else {
         return std::string("Extremely abnormal");}
