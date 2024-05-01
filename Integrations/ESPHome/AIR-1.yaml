@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.4.24.1"
+  version: "24.5.1.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -205,14 +205,16 @@ sensor:
       name: "SEN55 VOC"
       id: sen55_voc
       algorithm_tuning:
+        #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
-        learning_time_offset_hours: 12
-        learning_time_gain_hours: 12
+        learning_time_offset_hours: 72
+        learning_time_gain_hours: 72
         gating_max_duration_minutes: 180
         std_initial: 50
         gain_factor: 230
     nox:
       name: "SEN55 NOX"
+      id: sen55_nox
     acceleration_mode: low
     store_baseline: true
     address: 0x69
