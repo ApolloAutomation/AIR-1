@@ -94,7 +94,7 @@ number:
     min_value: -70.0
     max_value: 70.0
     entity_category: "CONFIG"
-    unit_of_measurement: "°C"
+    unit_of_measurement: "%"
     optimistic: true
     update_interval: never
     step: 0.1
@@ -336,11 +336,11 @@ text_sensor:
     lambda: |-
       if (id(sen55_voc).state < 80) {
         return std::string("Improved");} 
-      else if (id(sen55_voc).state < 120) {
+      else if (id(sen55_voc).state < 150) {
         return std::string("Normal");} 
-      else if (id(sen55_voc).state < 200) {
+      else if (id(sen55_voc).state < 250) {
         return std::string("Abnormal");} 
-      else if (id(sen55_voc).state < 300) {
+      else if (id(sen55_voc).state < 400) {
         return std::string("Very abnormal");} 
       else {
         return std::string("Extremely abnormal");}
