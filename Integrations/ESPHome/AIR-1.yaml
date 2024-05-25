@@ -15,6 +15,15 @@ esphome:
   project:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
+    
+  on_boot:
+  - priority: -10
+    then:
+      - if:
+          condition:
+            - lambda: "return id(runTest);"
+          then:
+            - lambda: "id(testScript).execute();"
 
 
   min_version: 2023.11.1
@@ -60,10 +69,6 @@ globals:
 
 # Enable Home Assistant API
 api:
-  on_client_connected:
-    - delay: 1s
-    - light.turn_off: rgb_light
-    - lambda: 'id(cycleCounter) = 30;'
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
