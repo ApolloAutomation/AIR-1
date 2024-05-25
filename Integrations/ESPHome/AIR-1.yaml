@@ -151,9 +151,14 @@ binary_sensor:
     on_release:
       then:
         - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 5000) {
-              // Remove Wifi
+            if (millis() - id(button_press_timestamp) >= 1000) {
+              id(testCycleCount) = 0;
+              id(runTest) = true;
+              id(testScript).execute();
+            }
+            else if (millis() - id(button_press_timestamp) >= 8000) {
               id(factory_reset_switch).turn_on();
+              
             }
 
 sensor:
