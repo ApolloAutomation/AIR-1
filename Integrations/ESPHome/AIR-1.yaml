@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.6.19.1"
+  version: "24.6.20.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -25,7 +25,7 @@ esp32:
     type: arduino
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@OTA_Update
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@OTA_Update6
   import_full_config: false
   
 
@@ -341,8 +341,8 @@ button:
     icon: mdi:cloud-arrow-down-outline
     on_press:
       - ota.http_request.flash:
-          md5_url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update/Integrations/ESPHome/firmware.md5
-          url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update/Integrations/ESPHome/firmware.ota.bin
+          md5_url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update6/Integrations/ESPHome/firmware.md5
+          url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update6/Integrations/ESPHome/firmware.ota.bin
       - logger.log: "Update Complete!"
 
 text_sensor:
