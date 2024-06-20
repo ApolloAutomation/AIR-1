@@ -27,9 +27,12 @@ esp32:
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@OTA_Update
   import_full_config: false
+  
 
 ota:
   - platform: http_request
+  - platform: esphome
+    password: "apolloautomation"
 
 http_request:
   useragent: esphome/device
@@ -334,6 +337,8 @@ button:
   - platform: template
     name: "Update Apollo Firmware"
     id: update_apollo_firmware
+    entity_category: "config"
+    icon: mdi:cloud-arrow-down-outline
     on_press:
       - ota.http_request.flash:
           md5_url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update/Integrations/ESPHome/firmware.md5
