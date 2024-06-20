@@ -30,7 +30,6 @@ dashboard_import:
 
 ota:
   - platform: http_request
-    password: "apolloautomation"
 
 http_request:
   useragent: esphome/device
