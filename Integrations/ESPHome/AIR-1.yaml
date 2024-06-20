@@ -25,11 +25,12 @@ esp32:
     type: arduino
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@OTA_Update
   import_full_config: false
 
 ota:
   - platform: http_request
+    password: "apolloautomation"
 
 http_request:
   useragent: esphome/device
@@ -336,8 +337,8 @@ button:
     id: update_apollo_firmware
     on_press:
       - ota.http_request.flash:
-          md5_url: http://example.com/firmware.md5
-          url: https://example.com/firmware.ota.bin
+          md5_url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update/Integrations/ESPHome/firmware.md5
+          url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update/Integrations/ESPHome/firmware.ota.bin
       - logger.log: "Update Complete!"
 
 text_sensor:
