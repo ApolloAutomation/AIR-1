@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.5.1.1"
+  version: "24.6.20.2"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -17,7 +17,7 @@ esphome:
     version: "${version}"
 
 
-  min_version: 2023.11.1
+  min_version: 2024.6.0
 
 esp32:
   board: esp32-c3-devkitm-1
@@ -58,8 +58,9 @@ api:
         - sen5x.start_fan_autoclean: sen55
 
 ota:
-  password: "apolloautomation"
-  safe_mode: false
+  - platform: esphome
+    password: "apolloautomation"
+
 
 wifi:
   on_connect:
