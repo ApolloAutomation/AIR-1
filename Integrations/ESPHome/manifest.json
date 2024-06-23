@@ -10,7 +10,7 @@
         ],
         "ota": {
         "md5": "firmware.md5",
-        "path": "firmware.bin"
+        "path": "firmware.ota.bin"
       }
       }
     ]
