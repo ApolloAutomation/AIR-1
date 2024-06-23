@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.6.20.1"
+  version: "24.6.23.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -25,12 +25,11 @@ esp32:
     type: arduino
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@OTA_Update6
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
   import_full_config: false
   
 
 ota:
-  - platform: http_request
   - platform: esphome
     password: "apolloautomation"
 
@@ -39,6 +38,16 @@ http_request:
   timeout: 10s
   verify_ssl: false
 
+update:
+  - platform: http_request
+    id: firmware_update
+    name: Firmware Update
+    source: github://ApolloAutomation/AIR-1/Integrations/ESPHome/manifest.json
+
+improv_serial:
+
+esp32_improv:
+  authorizer: none
 
 globals:
   - id: cycleCounter
@@ -72,7 +81,10 @@ api:
 
 wifi:
   on_connect:
-    - delay: 5s # Gives time for improv results to be transmitted
+    - delay: 5s  # Gives time for improv results to be transmitted
+    - ble.disable:
+  on_disconnect:
+    - ble.enable:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -80,12 +92,10 @@ wifi:
 
 captive_portal:
 
-
 web_server:
   port: 80
 
 logger:
-  level: NONE
 
 i2c:
   sda: GPIO1
@@ -334,16 +344,6 @@ button:
     on_press:
       - sen5x.start_fan_autoclean: sen55
 
-  - platform: template
-    name: "Update Apollo Firmware"
-    id: update_apollo_firmware
-    entity_category: "config"
-    icon: mdi:cloud-arrow-down-outline
-    on_press:
-      - ota.http_request.flash:
-          md5_url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update6/Integrations/ESPHome/firmware.md5
-          url: https://github.com/ApolloAutomation/AIR-1/blob/OTA_Update6/Integrations/ESPHome/firmware.ota.bin
-      - logger.log: "Update Complete!"
 
 text_sensor:
     # Convert VOC Index To Text: 
