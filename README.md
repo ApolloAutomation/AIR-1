@@ -19,5 +19,5 @@ The AIR-1 measures just 61mm x 61mm x 30mm, and we have focused on efficient hea
 
 Links: \
 Discord (Support/feedback/discussion/future products): [https://discord.gg/8PpS4yUaUh](https://discord.gg/mMNgQPyF94) \
-Shop: [https://shop.apolloautomation.cloud](https://shop.apolloautomation.cloud/products/air-1)https://shop.apolloautomation.cloud/products/air-1 \
-Wiki: [https://wiki.apolloautomation.cloud](https://wiki.apolloautomation.cloud/)https://wiki.apolloautomation.cloud/ 
+Shop: [https://shop.apolloautomation.cloud](https://shop.apolloautomation.cloud/products/air-1) \
+Wiki: [https://wiki.apolloautomation.cloud](https://wiki.apolloautomation.cloud/)
