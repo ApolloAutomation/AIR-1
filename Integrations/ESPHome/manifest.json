@@ -1,13 +1,18 @@
 {
-    "name": "apollo-air-1",
-    "version": "24.6.20.2",
-    "new_install_prompt_erase": false,
-    "builds": [
-      {
-        "chipFamily": "ESP32-C3",
-        "parts": [
-          { "path": "firmware-factory.bin", "offset": 0 }
-        ]
+  "name": "apollo-air-1",
+  "version": "",
+  "new_install_prompt_erase": false,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [{ "path": "firmware-factory.bin", "offset": 0 }]
+    },
+    {
+      "chipFamily": "ESP32-C3",
+      "ota": {
+        "path": "firmware.ota.bin",
+        "md5": ""
       }
-    ]
-  }
+    }
+  ]
+}
