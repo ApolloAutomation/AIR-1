@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.6.20.2"
+  version: "24.7.1.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -60,11 +60,32 @@ api:
 ota:
   - platform: esphome
     password: "apolloautomation"
+    id: ota_default
+  - platform: http_request
+    id: ota_managed
 
+http_request:
+  useragent: esphome/device
+  timeout: 10s
+  verify_ssl: false
+
+update:
+  - platform: http_request
+    id: firmware_update
+    name: Firmware Update
+    source: https://apolloautomation.github.io/AIR-1/artifact/manifest.json
+
+improv_serial:
+
+esp32_improv:
+  authorizer: none
 
 wifi:
   on_connect:
-    - delay: 5s # Gives time for improv results to be transmitted
+    - delay: 5s  # Gives time for improv results to be transmitted
+    - ble.disable:
+  on_disconnect:
+    - ble.enable:
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
@@ -121,6 +142,7 @@ binary_sensor:
     pin: 
       number: GPIO9
       inverted: true
+      ignore_strapping_warning: true
       mode:
         input: true
         pullup: true

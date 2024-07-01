@@ -18,6 +18,7 @@ Dimensions & Design:
 The AIR-1 measures just 61mm x 61mm x 30mm, and we have focused on efficient heat management within this small package to maintain sensor accuracy. This includes a thoughtful PCB layout and case design, incorporating ventilation and strategic component placement. 
 
 Links: \
+
 Discord (Support/feedback/discussion/future products): [https://discord.gg/8PpS4yUaUh](https://discord.gg/mMNgQPyF94) \
-Shop: [https://shop.apolloautomation.cloud](https://shop.apolloautomation.cloud/products/air-1) \
-Wiki: [https://wiki.apolloautomation.cloud](https://wiki.apolloautomation.cloud/)
+Shop: [https://apolloautomation.com](https://apolloautomation.com/products/air-1) \
+Wiki: [https://wiki.apolloautomation.com](https://wiki.apolloautomation.com/)
