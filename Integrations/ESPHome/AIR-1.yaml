@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.7.3.1"
+  version: "24.7.3.2"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -359,9 +359,12 @@ text_sensor:
         return std::string("Very abnormal");} 
       else {
         return std::string("Extremely abnormal");}
-  - platform: version
-    name: "ESP Version"
-    hide_timestamp: true
+  - platform: template
+    name: "Firmware Version"
+    icon: mdi:pound
+    update_interval: 300s
+    lambda: |-
+      return {"${version}"};
 
 switch:
   - platform: template
