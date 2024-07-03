@@ -90,6 +90,7 @@ web_server:
   port: 80
 
 logger:
+  level: INFO
 
 i2c:
   sda: GPIO1
