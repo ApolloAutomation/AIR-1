@@ -367,6 +367,9 @@ text_sensor:
         return std::string("Very abnormal");} 
       else {
         return std::string("Extremely abnormal");}
+  - platform: version
+    name: "ESP Version"
+    hide_timestamp: true
 
 switch:
   - platform: template
