@@ -1,7 +1,7 @@
 #Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.7.3.1"
+  version: "24.7.4.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esphome:
@@ -75,21 +75,16 @@ update:
     name: Firmware Update
     source: https://apolloautomation.github.io/AIR-1/artifact/manifest.json
 
-
 wifi:
-  power_save_mode: none
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
 captive_portal:
 
+safe_mode:
 
 web_server:
   port: 80
-
-logger:
 
 i2c:
   sda: GPIO1
@@ -123,7 +118,7 @@ number:
     update_interval: never
     step: 0.1
     mode: box
-    
+
 
 binary_sensor:
   - platform: status
