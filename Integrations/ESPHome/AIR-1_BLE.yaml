@@ -62,6 +62,8 @@ ota:
     password: "apolloautomation"
     id: ota_default
 
+bluetooth_proxy:
+  active: true
 
 wifi:
   on_connect:
