@@ -60,7 +60,9 @@ api:
 ota:
   - platform: esphome
     password: "apolloautomation"
-
+    
+bluetooth_proxy:
+  active: true
 
 wifi:
   on_connect:
