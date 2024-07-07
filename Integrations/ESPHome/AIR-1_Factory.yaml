@@ -25,7 +25,7 @@ ota:
     id: ota_managed
 
 http_request:
-  verify_ssl: true
+  verify_ssl: false
 
 update:
   - platform: http_request
