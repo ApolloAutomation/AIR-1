@@ -35,6 +35,11 @@ update:
 
 safe_mode:
 
+improv_serial:
+
+esp32_improv:
+  authorizer: none
+
 wifi:
   on_connect:
     - delay: 5s
