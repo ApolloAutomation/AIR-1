@@ -21,19 +21,6 @@ logger:
 ota:
   - platform: esphome
     id: ota_esphome
-  - platform: http_request
-    id: ota_managed
-
-http_request:
-  verify_ssl: false
-
-update:
-  - platform: http_request
-    id: firmware_update
-    name: Firmware Update
-    source: https://apolloautomation.github.io/AIR-1/artifact/manifest.json
-
-safe_mode:
 
 improv_serial:
 
