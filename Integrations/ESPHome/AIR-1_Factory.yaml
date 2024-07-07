@@ -39,7 +39,7 @@ wifi:
 packages:
   remote_package:
     url: https://github.com/ApolloAutomation/AIR-1/
-    ref: SplitYaml
+    ref: main
     files:
       - Integrations/ESPHome/Core.yaml
     refresh: 0d
