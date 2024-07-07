@@ -13,18 +13,34 @@ esphome:
   min_version: 2024.6.4
 
 dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_Factory.yaml
   import_full_config: false
+
+logger:
 
 ota:
   - platform: esphome
-    password: "apolloautomation"
     id: ota_esphome
+  - platform: http_request
+    id: ota_managed
 
-bluetooth_proxy:
-  active: true
+http_request:
+  verify_ssl: true
+
+update:
+  - platform: http_request
+    id: firmware_update
+    name: Firmware Update
+    source: https://apolloautomation.github.io/AIR-1/artifact/manifest.json
+
+safe_mode:
 
 wifi:
+  on_connect:
+    - delay: 5s
+    - ble.disable:
+  on_disconnect:
+    - ble.enable:
   ap:
     ssid: "Apollo AIR1 Hotspot"
 

@@ -12,6 +12,7 @@ jobs:
         file:
           - Integrations/ESPHome/AIR-1.yaml
           - Integrations/ESPHome/AIR-1_BLE.yaml
+          - Integrations/ESPHome/AIR-1_Factory.yaml
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4.1.7
