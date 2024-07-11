@@ -23,14 +23,14 @@ jobs:
         uses: esphome/build-action@v3.0.0
         id: esphome-build
         with:
-          yaml_file: Integrations/ESPHome/${{ env.UPPERCASE_DEVICE_NAME }}_Factory.yaml
+          yaml_file: Integrations/ESPHome/${{ env.UPPERCASE_DEVICE_NAME }}_OTA.yaml
           version: 'latest'
           cache: true
 
       - name: Read version from YAML file
         id: read_version
         run: |
-          version=$(awk '/substitutions:/ {found=1} found && /version:/ {print $2; exit}' Integrations/ESPHome/${{ env.UPPERCASE_DEVICE_NAME }}_Factory.yaml | tr -d '"')
+          version=$(awk '/substitutions:/ {found=1} found && /version:/ {print $2; exit}' Integrations/ESPHome/${{ env.UPPERCASE_DEVICE_NAME }}_OTA.yaml | tr -d '"')
           echo "project_version=$version" >> $GITHUB_ENV
       
       - name: Move generated files to output
@@ -95,7 +95,8 @@ jobs:
           asset_path: output/apollo-${{ env.DEVICE_NAME }}-esp32c3.ota.bin
           asset_name: apollo-${{ env.DEVICE_NAME }}-esp32c3.ota.bin
           asset_content_type: application/octet-stream
-      - name: Upload firmware.ota.bin to Release
+      
+      - name: Upload manifest.json to Release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-release-asset@v1
         env:
