@@ -351,6 +351,7 @@ text_sensor:
   - platform: template
     name: "Firmware Version"
     icon: mdi:pound
+    entity_category: "config"
     update_interval: 300s
     lambda: |-
       return {"${version}"};
