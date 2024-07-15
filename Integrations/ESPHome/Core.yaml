@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.7.6.1"
+  version: "24.7.15.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
