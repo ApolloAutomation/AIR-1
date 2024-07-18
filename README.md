@@ -23,7 +23,6 @@ YAML Files:
 - AIR-1_Factory.yaml: This is the firmware flashed by us on new devices. It contains the components for ESP improve, allowing easy adoption in Home Assistant. When you load the device in ESPHome addon, it will grab the firmware from AIR-1.yaml which no longer has the improve.
 
 
-
 Links:
 
 Discord (Support/feedback/discussion/future products): [https://discord.gg/8PpS4yUaUh](https://discord.gg/mMNgQPyF94) \
