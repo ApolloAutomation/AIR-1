@@ -1,44 +1,13 @@
-#Define Project
 substitutions:
   name: apollo-air-1
-  version: "24.7.15.2"
+  version: "24.7.15.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
-
-esphome:
-  name: "${name}"
-  friendly_name: Apollo AIR-1
-  comment: Apollo AIR-1
-  name_add_mac_suffix: true
-  platformio_options:
-    board_build.flash_mode: dio
-
-  project:
-    name: "ApolloAutomation.AIR-1"
-    version: "${version}"
-
-
-  min_version: 2024.6.0
 
 esp32:
   board: esp32-c3-devkitm-1
   framework:
     type: arduino
 
-dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
-  import_full_config: false
-
-globals:
-  - id: cycleCounter
-    type: int
-    restore_value: no
-    initial_value: '0'
-  - id: button_press_timestamp
-    restore_value: no
-    type: uint32_t
-    initial_value: '0'
-
-# Enable Home Assistant API
 api:
   on_client_connected:
     - delay: 1s
@@ -57,28 +26,20 @@ api:
       then:
         - sen5x.start_fan_autoclean: sen55
 
-ota:
-  - platform: esphome
-    password: "apolloautomation"
-    id: ota_default
-
-
-wifi:
-  on_connect:
-    - delay: 5s # Gives time for improv results to be transmitted
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Apollo AIR1 Hotspot"
-
 captive_portal:
-
 
 web_server:
   port: 80
 
-logger:
-  level: NONE
+globals:
+  - id: cycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: button_press_timestamp
+    restore_value: no
+    type: uint32_t
+    initial_value: '0'
 
 
 i2c:
@@ -347,13 +308,6 @@ text_sensor:
         return std::string("Very abnormal");} 
       else {
         return std::string("Extremely abnormal");}
-  - platform: template
-    name: "Firmware Version"
-    icon: mdi:pound
-    entity_category: "config"
-    update_interval: 300s
-    lambda: |-
-      return {"${version}"};
 
 switch:
   - platform: template

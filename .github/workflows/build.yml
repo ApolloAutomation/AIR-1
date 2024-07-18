@@ -95,7 +95,8 @@ jobs:
           asset_path: output/apollo-${{ env.DEVICE_NAME }}-esp32c3.ota.bin
           asset_name: apollo-${{ env.DEVICE_NAME }}-esp32c3.ota.bin
           asset_content_type: application/octet-stream
-      - name: Upload firmware.ota.bin to Release
+      
+      - name: Upload manifest.json to Release
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-release-asset@v1
         env:
