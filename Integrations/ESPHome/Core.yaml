@@ -168,7 +168,7 @@ sensor:
       name: "SEN55 Humidity"
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
-      accuracy_decimals: 0
+      accuracy_decimals: 1
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
