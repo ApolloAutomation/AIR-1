@@ -37,9 +37,4 @@ wifi:
     ssid: "Apollo AIR1 Hotspot"
 
 packages:
-  remote_package:
-    url: https://github.com/ApolloAutomation/AIR-1/
-    ref: main
-    files:
-      - Integrations/ESPHome/Core.yaml
-    refresh: 0d
+  core: !include Core.yaml
