@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.7.15.1"
+  version: "24.8.24.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -95,9 +95,13 @@ binary_sensor:
     on_release:
       then:
         - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 5000) {
+            if (millis() - id(button_press_timestamp) >= 10000) {
               // Remove Wifi
               id(factory_reset_switch).turn_on();
+            }
+            else {
+              // StatusCheck
+              id(statusCheck).execute();
             }
 
 sensor:
@@ -164,10 +168,12 @@ sensor:
       name: "SEN55 Humidity"
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
-      accuracy_decimals: 0
+      accuracy_decimals: 1
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
+      device_class: volatile_organic_compounds_parts
+      unit_of_measurement: "ppm" 
       algorithm_tuning:
         #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
@@ -349,3 +355,40 @@ interval:
             - light.turn_off:
                 id: rgb_light
             - lambda: 'id(cycleCounter) += 1;'
+
+script:
+  - id: statusCheck
+    then:
+      - if:
+          condition:
+            - lambda: 'return id(ink_ha_connected).state;'
+          then:
+            - logger.log: "Apollo Automation: Connected To HA"
+            - light.turn_on: 
+                id: rgb_light
+                brightness: 100%
+                red: 0%
+                green: 0%
+                blue: 100%
+          else:
+            - if:
+                condition:
+                  - wifi.connected
+                then:
+                  - logger.log: "Apollo Automation: Connected To Wifi"
+                  - light.turn_on: 
+                      id: rgb_light
+                      brightness: 100%
+                      red: 0%
+                      green: 100%
+                      blue: 0%
+                else:
+                  - logger.log: "Apollo Automation: Not Connected To Wifi"
+                  - light.turn_on: 
+                      id: rgb_light
+                      brightness: 100%
+                      red: 100%
+                      green: 100%
+                      blue: 0%
+      - delay: 5s
+      - light.turn_off: rgb_light
