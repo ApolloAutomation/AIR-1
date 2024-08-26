@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.8.24.1"
+  version: "24.8.26.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -46,6 +46,10 @@ i2c:
   sda: GPIO1
   scl: GPIO0
   id: bus_a
+
+external_components:
+  - source: github://pr#7173
+    components: [ mics_4514 ]
 
 number:
   - platform: template
