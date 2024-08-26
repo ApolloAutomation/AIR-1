@@ -1,7 +1,7 @@
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
-  comment: Apollo AIR-1 Factory
+  comment: Apollo AIR-1
   name_add_mac_suffix: true
   platformio_options:
     board_build.flash_mode: dio
