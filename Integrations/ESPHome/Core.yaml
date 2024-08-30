@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.8.24.1"
+  version: "24.8.30.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -173,7 +173,6 @@ sensor:
       name: "SEN55 VOC"
       id: sen55_voc
       device_class: volatile_organic_compounds_parts
-      unit_of_measurement: "ppm" 
       algorithm_tuning:
         #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
