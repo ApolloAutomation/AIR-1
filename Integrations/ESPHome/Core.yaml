@@ -25,6 +25,7 @@ api:
     - service: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
+  reboot_timeout: 0s
 
 captive_portal:
 
@@ -46,6 +47,11 @@ i2c:
   sda: GPIO1
   scl: GPIO0
   id: bus_a
+
+deep_sleep:
+  id: deep_sleep_1
+  sleep_duration: 5min
+  run_duration: 1min
 
 number:
   - platform: template
@@ -74,6 +80,44 @@ number:
     update_interval: never
     step: 0.1
     mode: box
+
+  - platform: template
+    name: "Run Duration"
+    id: deep_sleep_run_duration
+    min_value: 1
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "min"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_run_duration(x * 1000);
+  
+  - platform: template
+    name: "Sleep Duration"
+    id: deep_sleep_sleep_duration
+    min_value: 0
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 5
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "min"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 60 * 1000);
     
 
 binary_sensor:
@@ -325,6 +369,22 @@ switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
+
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_turn_off:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).allow_deep_sleep();
  
 #Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:

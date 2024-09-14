@@ -11,6 +11,13 @@ esphome:
     version: "${version}"
 
   min_version: 2024.6.4
+  on_boot:
+    priority: 500
+    then:
+      - lambda: |-
+          id(deep_sleep_1).set_run_duration(id(deep_sleep_run_duration).state * 1000);
+          id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+
 
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
