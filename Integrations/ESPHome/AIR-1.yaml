@@ -21,7 +21,6 @@ logger:
 ota:
   - platform: esphome
     id: ota_esphome
-    password: "apolloautomation"
 
 wifi:
   ap:
