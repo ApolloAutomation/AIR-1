@@ -13,6 +13,24 @@ api:
     - delay: 1s
     - light.turn_off: rgb_light
     - lambda: 'id(cycleCounter) = 30;'
+    - delay: 5s
+    - if:
+        condition:
+          or:
+            - binary_sensor.is_on: ota_mode
+            - switch.is_on: prevent_sleep
+        then:
+          - lambda: |- 
+              ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
+              id(deep_sleep_1).prevent_deep_sleep(); 
+        else: 
+          - if:
+              condition:
+                switch.is_on: sleep_after_connecting
+              then:
+                - switch.turn_off: accessory_power
+                - deep_sleep.enter:
+                    id: deep_sleep_1
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -147,6 +165,22 @@ binary_sensor:
               // StatusCheck
               id(statusCheck).execute();
             }
+  - platform: homeassistant
+    name: "OTA Mode"
+    id: ota_mode
+    entity_id: input_boolean.ota_mode
+    on_press:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_release:  
+      then:
+        - if:
+            condition:
+              switch.is_off: prevent_sleep
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
 
 sensor:
   - platform: internal_temperature
@@ -312,8 +346,6 @@ light:
           min_brightness: 50%
           max_brightness: 100%
 
-
-
 button:
   - platform: restart
     icon: mdi:power-cycle
@@ -383,8 +415,18 @@ switch:
             id(deep_sleep_1).prevent_deep_sleep();
     on_turn_off:
       then:
-        - lambda: |- 
-            id(deep_sleep_1).allow_deep_sleep();
+        - if:
+            condition:
+              binary_sensor.is_off: ota_mode
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
+  - platform: template
+    name: "Sleep After Connecting"
+    id: sleep_after_connecting
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
  
 #Used To Control RGB Light On Startup. Tells User Status Of Device
 interval:
