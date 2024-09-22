@@ -28,7 +28,6 @@ api:
               condition:
                 switch.is_on: sleep_after_connecting
               then:
-                - switch.turn_off: accessory_power
                 - deep_sleep.enter:
                     id: deep_sleep_1
   services:

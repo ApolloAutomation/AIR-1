@@ -14,7 +14,6 @@ esphome:
   on_boot:
     priority: 500
     then:
-      - switch.turn_on: accessory_power
       - lambda: |-
           id(deep_sleep_1).set_run_duration(id(deep_sleep_run_duration).state * 1000);
           id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
@@ -47,9 +46,4 @@ wifi:
     ssid: "Apollo AIR1 Hotspot"
 
 packages:
-  remote_package:
-    url: https://github.com/ApolloAutomation/AIR-1/
-    ref: main
-    files:
-      - Integrations/ESPHome/Core.yaml
-    refresh: 0d
+  core: !include Core.yaml
