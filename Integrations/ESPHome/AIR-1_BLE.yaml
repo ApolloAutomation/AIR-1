@@ -1,0 +1,37 @@
+esphome:
+  name: "${name}"
+  friendly_name: Apollo AIR-1
+  comment: Apollo AIR-1
+  name_add_mac_suffix: true
+  platformio_options:
+    board_build.flash_mode: dio
+
+  project:
+    name: "ApolloAutomation.AIR-1"
+    version: "${version}"
+
+  min_version: 2024.6.4
+
+dashboard_import:
+  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
+  import_full_config: false
+
+ota:
+  - platform: esphome
+    password: "apolloautomation"
+    id: ota_esphome
+
+bluetooth_proxy:
+  active: true
+
+wifi:
+  ap:
+    ssid: "Apollo AIR1 Hotspot"
+
+packages:
+  remote_package:
+    url: https://github.com/ApolloAutomation/AIR-1/
+    ref: main
+    files:
+      - Integrations/ESPHome/Core.yaml
+    refresh: 0d

@@ -1,74 +1,18 @@
-#Define Project
 substitutions:
   name: apollo-air-1
   version: "24.7.15.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
-
-esphome:
-  name: "${name}"
-  friendly_name: Apollo AIR-1
-  comment: Apollo AIR-1
-  name_add_mac_suffix: true
-  platformio_options:
-    board_build.flash_mode: dio
-
-  project:
-    name: "ApolloAutomation.AIR-1"
-    version: "${version}"
-    
-  on_boot:
-  - priority: -10
-    then:
-      - if:
-          condition:
-            - lambda: "return id(runTest);"
-          then:
-            - lambda: "id(testScript).execute();"
-
-
-  min_version: 2024.6.0
 
 esp32:
   board: esp32-c3-devkitm-1
   framework:
     type: arduino
 
-dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
-  import_full_config: false
-
-globals:
-  - id: cycleCounter
-    type: int
-    restore_value: no
-    initial_value: '0'
-  - id: button_press_timestamp
-    restore_value: no
-    type: uint32_t
-    initial_value: '0'
-  - id: runTest
-    restore_value: yes
-    type: bool
-    initial_value: "true"
-  - id: testCycleCount
-    type: int
-    restore_value: no
-    initial_value: "0"
-  - id: dps310Passed
-    restore_value: no
-    type: bool
-    initial_value: "false"
-  - id: sen55VOCPassed
-    restore_value: no
-    type: bool
-    initial_value: "false"
-  - id: sen55PMPassed
-    restore_value: no
-    type: bool
-    initial_value: "false"
-
-# Enable Home Assistant API
 api:
+  on_client_connected:
+    - delay: 1s
+    - light.turn_off: rgb_light
+    - lambda: 'id(cycleCounter) = 30;'
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -82,28 +26,21 @@ api:
       then:
         - sen5x.start_fan_autoclean: sen55
 
-ota:
-  - platform: esphome
-    password: "apolloautomation"
-    id: ota_default
-
-
-wifi:
-  on_connect:
-    - delay: 5s # Gives time for improv results to be transmitted
-
-  # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Apollo AIR1 Hotspot"
-
 captive_portal:
-
 
 web_server:
   port: 80
 
-logger:
-  level: NONE
+globals:
+  - id: cycleCounter
+    type: int
+    restore_value: no
+    initial_value: '0'
+  - id: button_press_timestamp
+    restore_value: no
+    type: uint32_t
+    initial_value: '0'
+
 
 i2c:
   sda: GPIO1
@@ -158,14 +95,9 @@ binary_sensor:
     on_release:
       then:
         - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 1000) {
-              id(testCycleCount) = 0;
-              id(runTest) = true;
-              id(testScript).execute();
-            }
-            else if (millis() - id(button_press_timestamp) >= 8000) {
+            if (millis() - id(button_press_timestamp) >= 5000) {
+              // Remove Wifi
               id(factory_reset_switch).turn_on();
-              
             }
 
 sensor:
@@ -320,8 +252,8 @@ light:
     effects:
       - pulse:
           name: "Slow Pulse"
-          transition_length: 1000ms
-          update_interval: 1000ms
+          transition_length: 250ms
+          update_interval: 250ms
           min_brightness: 50%
           max_brightness: 100%
       - pulse:
@@ -378,14 +310,20 @@ text_sensor:
         return std::string("Extremely abnormal");}
 
 switch:
+  - platform: template
+    name: "Startup Light Blink"
+    id: startup_light_blink
+    icon: mdi:lightbulb
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
  
-
-
-script:
-  - id: testScript      
+#Used To Control RGB Light On Startup. Tells User Status Of Device
+interval:
+  - interval: 1s
     then:
       - if:
           condition:
