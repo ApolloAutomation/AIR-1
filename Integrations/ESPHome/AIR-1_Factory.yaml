@@ -11,6 +11,14 @@ esphome:
     version: "${version}"
 
   min_version: 2024.6.4
+  on_boot:
+  - priority: -10
+    then:
+      - if:
+          condition:
+            - lambda: "return id(runTest);"
+          then:
+            - lambda: "id(testScript).execute();"
 
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml
@@ -37,9 +45,4 @@ wifi:
     ssid: "Apollo AIR1 Hotspot"
 
 packages:
-  remote_package:
-    url: https://github.com/ApolloAutomation/AIR-1/
-    ref: main
-    files:
-      - Integrations/ESPHome/Core.yaml
-    refresh: 0d
+  core: !include Core.yaml

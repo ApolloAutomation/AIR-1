@@ -349,3 +349,89 @@ interval:
             - light.turn_off:
                 id: rgb_light
             - lambda: 'id(cycleCounter) += 1;'
+
+scripts:
+  - id: testScript      
+    then:
+      if: 
+        condition:
+          - lambda: "return id(runTest) == true;"
+        then:
+          - lambda: "id(runTest) = false;"
+          - lambda: "id(testCycleCount) = 0;"
+          - while:
+              condition:
+                - lambda: "return id(testCycleCount) < 5;"
+              then:
+                - if:
+                    condition:
+                      - lambda: "return id(dps310Passed) == false;"
+                    then:
+                      - if:
+                          condition:
+                            - lambda: "return id(dps310pressure).state > 1000 && id(dps310pressure).state < 800;"
+                          then:
+                            - lambda: "id(dps310Passed) = true;"
+                - if:
+                    condition:
+                      - lambda: "return id(sen55VOCPassed) == false;"
+                    then:
+                      - if:
+                          condition:
+                            - lambda: "return id(sen55_voc).state > 10;"
+                          then:
+                            - lambda: "id(sen55VOCPassed) = true;"
+                      - if:
+                          condition:
+                            - lambda: "return id(sen55PMPassed) == false;"
+                          then:
+                            - if:
+                                condition:
+                                  - lambda: "return id(pm_10_0).state > 0.2;"
+                                then:
+                                  - lambda: "id(sen55PMPassed) = true;"
+              
+                - if:
+                    condition:
+                      - lambda: "return id(dps310Passed) && id(sen55VOCPassed) && id(sen55PMPassed);"
+                    then:
+                      - lambda: "id(testCycleCount) = 10;"
+                - lambda: "id(runTest) = false;"
+                - delay: 1s
+                - lambda: "id(testCycleCount) += 1;"
+          
+          #Check If Test Passed To Trigger Lights
+          - if:
+              condition:
+                - lambda: "return id(dps310Passed) && id(sen55VOCPassed) && id(sen55PMPassed);"
+              then:
+                - lambda: "id(runTest) = false;"
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 100%
+                    blue: 0%
+                - delay: 5s
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 0%
+                    blue: 0%
+                - light.turn_off:
+                    id: rgb_light
+                
+              else:
+                - lambda: "id(runTest) = false;"
+                - light.turn_on:
+                    id: rgb_light
+                    red: 100%
+                    green: 0%
+                    blue: 0%
+                - delay: 5s
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 0%
+                    blue: 0%
+                - light.turn_off:
+                    id: rgb_light
