@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.10.10.1"
+  version: "24.10.11.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -49,14 +49,6 @@ globals:
     restore_value: no
     initial_value: "0"
   - id: dps310Passed
-    restore_value: no
-    type: bool
-    initial_value: "false"
-  - id: sen55VOCPassed
-    restore_value: no
-    type: bool
-    initial_value: "false"
-  - id: sen55PMPassed
     restore_value: no
     type: bool
     initial_value: "false"
@@ -362,28 +354,10 @@ script:
                             - lambda: "return id(dps310pressure).state > 800 && id(dps310pressure).state < 1200;"
                           then:
                             - lambda: "id(dps310Passed) = true;"
-                - if:
-                    condition:
-                      - lambda: "return id(sen55VOCPassed) == false;"
-                    then:
-                      - if:
-                          condition:
-                            - lambda: "return id(sen55_voc).state > 10;"
-                          then:
-                            - lambda: "id(sen55VOCPassed) = true;"
-                      - if:
-                          condition:
-                            - lambda: "return id(sen55PMPassed) == false;"
-                          then:
-                            - if:
-                                condition:
-                                  - lambda: "return id(pm_10_0).state > 0.2;"
-                                then:
-                                  - lambda: "id(sen55PMPassed) = true;"
               
                 - if:
                     condition:
-                      - lambda: "return id(dps310Passed) && id(sen55VOCPassed) && id(sen55PMPassed);"
+                      - lambda: "return id(dps310Passed);"
                     then:
                       - lambda: "id(testCycleCount) = 10;"
                 - lambda: "id(runTest) = false;"
@@ -393,7 +367,7 @@ script:
           #Check If Test Passed To Trigger Lights
           - if:
               condition:
-                - lambda: "return id(dps310Passed) && id(sen55VOCPassed) && id(sen55PMPassed);"
+                - lambda: "return id(dps310Passed);"
               then:
                 - lambda: "id(runTest) = false;"
                 - light.turn_on:
