@@ -10,9 +10,23 @@ esp32:
 
 api:
   on_client_connected:
-    - delay: 1s
-    - light.turn_off: rgb_light
-    - lambda: 'id(cycleCounter) = 30;'
+    - delay: 5s
+    - if:
+        condition:
+          or:
+            - binary_sensor.is_on: ota_mode
+            - switch.is_on: prevent_sleep
+        then:
+          - lambda: |- 
+              ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
+              id(deep_sleep_1).prevent_deep_sleep(); 
+        else: 
+          - if:
+              condition:
+                switch.is_on: sleep_after_connecting
+              then:
+                - deep_sleep.enter:
+                    id: deep_sleep_1
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -25,6 +39,7 @@ api:
     - service: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
+  reboot_timeout: 0s
 
 captive_portal:
 
@@ -59,6 +74,11 @@ i2c:
   scl: GPIO0
   id: bus_a
 
+deep_sleep:
+  id: deep_sleep_1
+  sleep_duration: 5min
+  run_duration: 1min
+
 number:
   - platform: template
     name: SEN55 Temperature Offset
@@ -86,6 +106,44 @@ number:
     update_interval: never
     step: 0.1
     mode: box
+
+  - platform: template
+    name: "Run Duration"
+    id: deep_sleep_run_duration
+    min_value: 1
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 1
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "min"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_run_duration(x * 1000);
+  
+  - platform: template
+    name: "Sleep Duration"
+    id: deep_sleep_sleep_duration
+    min_value: 0
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 5
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "min"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 60 * 1000);
     
 
 binary_sensor:
@@ -108,18 +166,39 @@ binary_sensor:
       then:
         - lambda: |-
             if (millis() - id(button_press_timestamp) >= 10000) {
-              // Remove Wifi
+              id(prevent_sleep).turn_on();
               id(factory_reset_switch).turn_on();
             }
-            else if (millis() - id(button_press_timestamp) >= 1000) {
-              id(testCycleCount) = 0;
-              id(runTest) = true;
-              id(testScript).execute();
+            else if (millis() - id(button_press_timestamp) >= 3000) {
+              //Turn Prevent Sleep On
+              id(prevent_sleep).turn_on();
+              //Prevent Sleep
+              id(deep_sleep_1).prevent_deep_sleep();
             }
             else {
               // StatusCheck
               id(statusCheck).execute();
+              delay(3000);
+              id(testCycleCount) = 0;
+              id(runTest) = true;
+              id(testScript).execute();
             }
+  - platform: homeassistant
+    name: "OTA Mode"
+    id: ota_mode
+    entity_id: input_boolean.apollo_ota_mode
+    on_press:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_release:  
+      then:
+        - if:
+            condition:
+              switch.is_off: prevent_sleep
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
 
 sensor:
   - platform: internal_temperature
@@ -285,8 +364,6 @@ light:
           min_brightness: 50%
           max_brightness: 100%
 
-
-
 button:
   - platform: restart
     icon: mdi:power-cycle
@@ -335,7 +412,33 @@ switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
- 
+
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_turn_off:
+      then:
+        - if:
+            condition:
+              binary_sensor.is_off: ota_mode
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
+  - platform: template
+    name: "Sleep After Connecting"
+    id: sleep_after_connecting
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
 
 script:
   - id: testScript      
