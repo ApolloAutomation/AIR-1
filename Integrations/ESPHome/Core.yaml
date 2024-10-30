@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.8.30.1"
+  version: "24.10.29.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -40,6 +40,18 @@ globals:
     restore_value: no
     type: uint32_t
     initial_value: '0'
+  - id: runTest
+    restore_value: yes
+    type: bool
+    initial_value: "true"
+  - id: testCycleCount
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: dps310Passed
+    restore_value: no
+    type: bool
+    initial_value: "false"
 
 
 i2c:
@@ -87,7 +99,7 @@ binary_sensor:
       mode:
         input: true
         pullup: true
-    id: reset_button
+    id: reset_button  
     on_press:
       then:
         - lambda: |-
@@ -98,6 +110,11 @@ binary_sensor:
             if (millis() - id(button_press_timestamp) >= 10000) {
               // Remove Wifi
               id(factory_reset_switch).turn_on();
+            }
+            else if (millis() - id(button_press_timestamp) >= 1000) {
+              id(testCycleCount) = 0;
+              id(runTest) = true;
+              id(testScript).execute();
             }
             else {
               // StatusCheck
@@ -315,47 +332,79 @@ text_sensor:
         return std::string("Extremely abnormal");}
 
 switch:
-  - platform: template
-    name: "Startup Light Blink"
-    id: startup_light_blink
-    icon: mdi:lightbulb
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    entity_category: "config"
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
  
-#Used To Control RGB Light On Startup. Tells User Status Of Device
-interval:
-  - interval: 1s
-    then:
-      - if:
-          condition:
-            - binary_sensor.is_off: ink_ha_connected
-            - lambda: 'return id(cycleCounter) < 30;'
-            - switch.is_on: startup_light_blink
-
-          then:
-            - light.toggle:
-                id: rgb_light
-            - lambda: 'id(cycleCounter) += 1;'
-
-  - interval: 1s
-    then:
-      - if:
-          condition:
-            - binary_sensor.is_off: ink_ha_connected
-            - lambda: 'return id(cycleCounter) > 30;'
-            - lambda: 'return id(cycleCounter) < 31;'
-            - switch.is_on: startup_light_blink
-
-          then:
-            - light.turn_off:
-                id: rgb_light
-            - lambda: 'id(cycleCounter) += 1;'
 
 script:
+  - id: testScript      
+    then:
+      if: 
+        condition:
+          - lambda: "return id(runTest) == true;"
+        then:
+          - lambda: "id(runTest) = false;"
+          - lambda: "id(testCycleCount) = 0;"
+          - while:
+              condition:
+                - lambda: "return id(testCycleCount) < 5;"
+              then:
+                - if:
+                    condition:
+                      - lambda: "return id(dps310Passed) == false;"
+                    then:
+                      - if:
+                          condition:
+                            - lambda: "return id(dps310pressure).state > 800 && id(dps310pressure).state < 1200;"
+                          then:
+                            - lambda: "id(dps310Passed) = true;"
+              
+                - if:
+                    condition:
+                      - lambda: "return id(dps310Passed);"
+                    then:
+                      - lambda: "id(testCycleCount) = 10;"
+                - lambda: "id(runTest) = false;"
+                - delay: 1s
+                - lambda: "id(testCycleCount) += 1;"
+          
+          #Check If Test Passed To Trigger Lights
+          - if:
+              condition:
+                - lambda: "return id(dps310Passed);"
+              then:
+                - lambda: "id(runTest) = false;"
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 100%
+                    blue: 0%
+                - delay: 5s
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 0%
+                    blue: 0%
+                - light.turn_off:
+                    id: rgb_light
+                
+              else:
+                - lambda: "id(runTest) = false;"
+                - light.turn_on:
+                    id: rgb_light
+                    red: 100%
+                    green: 0%
+                    blue: 0%
+                - delay: 5s
+                - light.turn_on:
+                    id: rgb_light
+                    red: 0%
+                    green: 0%
+                    blue: 0%
+                - light.turn_off:
+                    id: rgb_light
+
   - id: statusCheck
     then:
       - if:
