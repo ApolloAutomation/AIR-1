@@ -62,6 +62,11 @@ text_sensor:
       else {
         return std::string("Hazardous");}
 
+  - platform: wifi_info
+    ip_address:
+      name: " IP"
+      icon: "mdi:ip-outline"      
+
 light:
   - platform: esp32_rmt_led_strip
     id: !extend rgb_light
