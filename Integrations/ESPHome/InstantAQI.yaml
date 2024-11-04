@@ -1,0 +1,131 @@
+  ##############################################################################
+  # This example yaml code calculates an Instant AQI value based upon the
+  # Sensirion sensor's PM2.5 and PM10 values.
+  #
+  # These Instance AQI results ARE NOT to be misconstruded as either an
+  # EPA Daily AQI nor EPA NowCast AQI.
+  # EPA's Daily and NowCast AQIs refer solely to outdoor polutants; and are
+  # never calculated solely from real-time, single measurement values.
+  #
+  # Owing to the facts that:
+  #   • AIR-1, and its Sensirion SEN55, are currently designed for indoor use;
+  #   • users of the AIR-1 may occupy indoor environments whose ambient air
+  #     quality changes rapidly; and
+  #   • said users may gain significant benefit from immediate, real-time
+  #     awareness of unhealthy pollution levels.
+  # It is seems appropriate to provide a sample configuration that
+  # may emit these distinct pollutant results for display, if a customer desires.
+  #
+  # Please note that these calculations do use the EPA's AQI formula and
+  # PM2.5/PM10 breakpoint values, as published in May 2024, here:
+  #   https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf
+  #
+  # These calculations and results are provided "as is" and are not to be
+  # misused, misstated, or published to external sinks of data.  No
+  # representations or warranties of any kind, express or implied, are made as
+  # to their correctness or validity. They are for the sole use of the
+  # individual user; for use is at your sole risk; and are NOT intended to
+  # constitute as advice.  The user must verify and validate this yaml and its
+  # outputs before use and regularly periodically thereafter
+  #
+  ##############################################################################
+sensor:
+  - platform: template
+    name: "PM2.5 InstantAQI Value"
+    device_class: aqi
+    id: pm25_instant_aqi_value
+    state_class: measurement
+    icon: mdi:air-filter
+    accuracy_decimals: 0
+    lambda: |-
+      int pm25_instant_aqi_metric = 0;
+      if (id(pm_2_5).state < 9.0) {
+        // good
+        id(pm25_instant_aqi_category).publish_state("Good");
+        pm25_instant_aqi_metric = (50.0 - 0.0) / (9.0 - 0.0) * (id(pm_2_5).state - 0.0) + 0.0;
+      } else if (id(pm_2_5).state < 35.4) {
+        // moderate
+        id(pm25_instant_aqi_category).publish_state("Moderate");
+        pm25_instant_aqi_metric = (100.0 - 51.0) / (35.4 - 9.1) * (id(pm_2_5).state - 9.0) + 51.0;
+      } else if (id(pm_2_5).state < 55.4) {
+        // Unhealthy for Sensitive Groups
+        id(pm25_instant_aqi_category).publish_state("Unhealthy for Sensitive Groups");
+        pm25_instant_aqi_metric = (150.0 - 101.0) / (55.4 - 35.5) * (id(pm_2_5).state - 35.5) + 101.0;
+      } else if (id(pm_2_5).state < 125.4) {
+        // unhealthy
+        id(pm25_instant_aqi_category).publish_state("Unhealthy");
+        pm25_instant_aqi_metric = (200.0 - 151.0) / (125.4 - 55.5) * (id(pm_2_5).state - 55.5) + 151.0;
+      } else if (id(pm_2_5).state < 225.4) {
+        // very unhealthy
+        id(pm25_instant_aqi_category).publish_state("Very Unhealthy");
+        pm25_instant_aqi_metric = (300.0 - 201.0) / (225.4 - 125.5) * (id(pm_2_5).state - 125.5) + 201.0;
+      } else if (id(pm_2_5).state > 225.5) {
+        // hazardous
+        id(pm25_instant_aqi_category).publish_state("Hazardous");
+        pm25_instant_aqi_metric = 500;
+      }
+      return pm25_instant_aqi_metric;
+
+  - platform: template
+    name: "PM10 InstantAQI Value"
+    device_class: aqi
+    id: pm10_instant_aqi_value
+    state_class: measurement
+    icon: mdi:air-filter
+    accuracy_decimals: 0
+    lambda: |-
+      int pm10_instant_aqi_metric = 0;
+      if (id(pm_10_0).state < 54) {
+        // good
+        id(pm10_instant_aqi_category).publish_state("Good");
+        pm10_instant_aqi_metric = (50.0 - 0.0) / (54 - 0) * (id(pm_10_0).state - 0.0) + 0.0;
+      } else if (id(pm_10_0).state < 154) {
+        // moderate
+        id(pm10_instant_aqi_category).publish_state("Moderate");
+        pm10_instant_aqi_metric = (100.0 - 51.0) / (154 - 55) * (id(pm_10_0).state - 9.0) + 51.0;
+      } else if (id(pm_10_0).state < 254) {
+        // Unhealthy for Sensitive Groups
+        id(pm10_instant_aqi_category).publish_state("Unhealthy for Sensitive Groups");
+        pm10_instant_aqi_metric = (150.0 - 101.0) / (254 - 155) * (id(pm_10_0).state - 35.5) + 101.0;
+      } else if (id(pm_10_0).state < 354) {
+        // unhealthy
+        id(pm10_instant_aqi_category).publish_state("Unhealthy");
+        pm10_instant_aqi_metric = (200.0 - 151.0) / (354 - 255) * (id(pm_10_0).state - 55.5) + 151.0;
+      } else if (id(pm_10_0).state < 424) {
+        // very unhealthy
+        id(pm10_instant_aqi_category).publish_state("Very Unhealthy");
+        pm10_instant_aqi_metric = (300.0 - 201.0) / (424 - 355) * (id(pm_10_0).state - 125.5) + 201.0;
+      } else if (id(pm_10_0).state > 425) {
+        // hazardous
+        id(pm10_instant_aqi_category).publish_state("Hazardous");
+        pm10_instant_aqi_metric = 500;
+      }
+      return pm10_instant_aqi_metric;
+
+text_sensor:
+
+  - platform: template
+    name: "PM2.5 InstantAQI Category"
+    icon: "mdi:pine-tree-fire"
+    id: pm25_instant_aqi_category
+    update_interval: never
+
+  - platform: template
+    name: "PM10 InstantAQI Category"
+    icon: "mdi:pine-tree-fire"
+    id: pm10_instant_aqi_category
+    update_interval: never
+
+  - platform: template
+    name: "PM2.5 InstantAQI"
+    icon: "mdi:pine-tree-fire"
+    lambda: |-
+      std::string val = id(pm25_instant_aqi_category).state;
+      return str_sprintf("%.0f - %s", id(pm25_instant_aqi_value).state, val.c_str());
+
+  - platform: template
+    name: "PM10 InstantAQI"
+    icon: "mdi:pine-tree-fire"
+    lambda: |-
+      std::string val = id(pm10_instant_aqi_category).state;
+      return str_sprintf("%.0f - %s", id(pm10_instant_aqi_value).state, val.c_str());

@@ -1,0 +1,8 @@
+packages:
+  remote_package:
+    url: https://github.com/lcgreenwald/AIR-1/
+    ref: main
+    files:
+      - Integrations/ESPHome/MyCustom.yaml
+      - Integrations/ESPHome/InstantAQI.yaml
+    refresh: 0d
