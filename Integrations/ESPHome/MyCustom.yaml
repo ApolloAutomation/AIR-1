@@ -64,27 +64,7 @@ text_sensor:
 
 light:
   - platform: esp32_rmt_led_strip
-    id: rgb_light
-    name: "RGB Light"
-    pin: GPIO3
-    rmt_channel: 0
-    default_transition_length: 0s
-    chipset: WS2812
-    num_leds: 3
-    rgb_order: grb
-    effects:
-      - pulse:
-          name: "Slow Pulse"
-          transition_length: 250ms
-          update_interval: 250ms
-          min_brightness: 50%
-          max_brightness: 100%
-      - pulse:
-          name: "Fast Pulse"
-          transition_length: 100ms
-          update_interval: 100ms
-          min_brightness: 50%
-          max_brightness: 100%
+    id: !extend rgb_light
       - random:
       - random:
           name: Random Effect With Custom Values
