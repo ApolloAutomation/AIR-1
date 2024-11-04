@@ -73,18 +73,6 @@ light:
     num_leds: 3
     rgb_order: grb
     effects:
-      - pulse:
-          name: "Slow Pulse"
-          transition_length: 250ms
-          update_interval: 250ms
-          min_brightness: 50%
-          max_brightness: 100%
-      - pulse:
-          name: "Fast Pulse"
-          transition_length: 100ms
-          update_interval: 100ms
-          min_brightness: 50%
-          max_brightness: 100%
       - random:
       - random:
           name: Random Effect With Custom Values
