@@ -1,10 +1,6 @@
-api:
-  encryption:
-    key: !secret api-key    
-
-dashboard_import:
-  package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1.yaml@main
-  import_full_config: true
+#api:
+#  encryption:
+#    key: !secret api-key    
 
 text_sensor:
     # Convert VOC Index To Text: 
