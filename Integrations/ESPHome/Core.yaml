@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.11.8.1"
+  version: "24.11.9.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -21,6 +21,8 @@ api:
               ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
               id(deep_sleep_1).prevent_deep_sleep(); 
         else:
+          - lambda: |-
+              id(reportAllValues).execute();
           - deep_sleep.enter:
               id: deep_sleep_1
   services:
@@ -382,8 +384,10 @@ text_sensor:
         return std::string("Abnormal");} 
       else if (id(sen55_voc).state < 400) {
         return std::string("Very abnormal");} 
-      else {
+      else if (id(sen55_voc).state >= 400) {
         return std::string("Extremely abnormal");}
+      else {
+        return std::string("Unknown");}
 
 switch:
   - platform: factory_reset
@@ -515,15 +519,15 @@ script:
       - light.turn_off: rgb_light
   - id: reportAllValues
     then:
-      - component.update: mics4514
       - component.update: sen55
+      - component.update: mics4514
       - component.update: dps_310
       - component.update: scd40
       - component.update: wifi_signal_db
       - component.update: sys_esp_temperature
       - component.update: sys_uptime
-      - component.update: voc_quality
       - component.update: pm0_3_to_1
       - component.update: pm1_to_2_5
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
+      - component.update: voc_quality
