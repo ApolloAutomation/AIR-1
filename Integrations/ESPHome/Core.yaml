@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.10.29.1"
+  version: "24.11.9.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -20,13 +20,11 @@ api:
           - lambda: |- 
               ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
               id(deep_sleep_1).prevent_deep_sleep(); 
-        else: 
-          - if:
-              condition:
-                switch.is_on: sleep_after_connecting
-              then:
-                - deep_sleep.enter:
-                    id: deep_sleep_1
+        else:
+          - lambda: |-
+              id(reportAllValues).execute();
+          - deep_sleep.enter:
+              id: deep_sleep_1
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -77,7 +75,7 @@ i2c:
 deep_sleep:
   id: deep_sleep_1
   sleep_duration: 5min
-  run_duration: 1min
+  run_duration: 2min
 
 number:
   - platform: template
@@ -106,25 +104,6 @@ number:
     update_interval: never
     step: 0.1
     mode: box
-
-  - platform: template
-    name: "Run Duration"
-    id: deep_sleep_run_duration
-    min_value: 1
-    max_value: 800
-    step: 1
-    mode: box
-    update_interval: never
-    optimistic: true
-    restore_value: true
-    initial_value: 1
-    icon: "mdi:arrow-collapse-right"
-    entity_category: CONFIG
-    unit_of_measurement: "min"
-    on_value:
-      then:
-        - lambda: |-
-            id(deep_sleep_1).set_run_duration(x * 1000);
   
   - platform: template
     name: "Sleep Duration"
@@ -143,7 +122,7 @@ number:
     on_value:
       then:
         - lambda: |-
-            id(deep_sleep_1).set_sleep_duration(x * 60 * 60 * 1000);
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 1000);
     
 
 binary_sensor:
@@ -405,8 +384,10 @@ text_sensor:
         return std::string("Abnormal");} 
       else if (id(sen55_voc).state < 400) {
         return std::string("Very abnormal");} 
-      else {
+      else if (id(sen55_voc).state >= 400) {
         return std::string("Extremely abnormal");}
+      else {
+        return std::string("Unknown");}
 
 switch:
   - platform: factory_reset
@@ -432,13 +413,6 @@ switch:
             then:
               - lambda: |- 
                   id(deep_sleep_1).allow_deep_sleep();
-  - platform: template
-    name: "Sleep After Connecting"
-    id: sleep_after_connecting
-    icon: mdi:sleep
-    restore_mode: RESTORE_DEFAULT_ON
-    optimistic: true
-    entity_category: "config"
 
 script:
   - id: testScript      
@@ -543,3 +517,17 @@ script:
                       blue: 0%
       - delay: 5s
       - light.turn_off: rgb_light
+  - id: reportAllValues
+    then:
+      - component.update: sen55
+      - component.update: mics4514
+      - component.update: dps_310
+      - component.update: scd40
+      - component.update: wifi_signal_db
+      - component.update: sys_esp_temperature
+      - component.update: sys_uptime
+      - component.update: pm0_3_to_1
+      - component.update: pm1_to_2_5
+      - component.update: pm2_5_to_4
+      - component.update: pm4_to_10
+      - component.update: voc_quality
