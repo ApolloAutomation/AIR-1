@@ -8,7 +8,7 @@ text_sensor:
     # https://sensirion.com/media/documents/ACD82D45/6294DFC0/Info_Note_Integration_VOC_NOx_Sensor.pdf
   - platform: template
     name: "VOC Quality"
-    id: voc_quality
+    id: !extend voc_quality
     icon: mdi:air-filter
     lambda: |-
       if (id(sen55_voc).state < 150) {
