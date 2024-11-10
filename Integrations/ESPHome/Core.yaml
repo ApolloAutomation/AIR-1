@@ -1,16 +1,16 @@
 substitutions:
   name: apollo-air-1
-  version: "24.11.9.1"
+  version: "24.11.10.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
   board: esp32-c3-devkitm-1
   framework:
-    type: arduino
+    type: esp-idf
 
 api:
   on_client_connected:
-    - delay: 5s
+    - delay: 30s
     - if:
         condition:
           or:
