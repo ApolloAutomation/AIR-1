@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.11.10.1"
+  version: "24.11.11.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -10,7 +10,7 @@ esp32:
 
 api:
   on_client_connected:
-    - delay: 30s
+    - delay: 90s
     - if:
         condition:
           or:
