@@ -15,7 +15,6 @@ esphome:
     priority: 500
     then:
       - lambda: |-
-          id(deep_sleep_1).set_run_duration(id(deep_sleep_run_duration).state * 1000);
           id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
       - if:
           condition:
@@ -40,6 +39,9 @@ ota:
 
 bluetooth_proxy:
   active: true
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
 
 wifi:
   ap:
