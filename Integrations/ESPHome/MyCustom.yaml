@@ -45,6 +45,36 @@ light:
           intensity: 1.5%
 
 
+text_sensor:
+  - id: !remove voc_quality
 
+  - platform: template
+    name: "VOC Quality"
+    id: voc_quality
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(sen55_voc).state < 150) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 250) {
+        return std::string("Moderate");} 
+      else if (id(sen55_voc).state < 400) {
+        return std::string("High");} 
+      else {
+        return std::string("Very High");}
+
+  - platform: template
+    name: "CO2 Quality"
+    id: co2_ppm
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(co2).state < 1000) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 2000) {
+        return std::string("Acceptable");} 
+      else if (id(sen55_voc).state < 5000) {
+        return std::string("Poor");} 
+      else {
+        return std::string("Very Poor");}
+        
 
 
