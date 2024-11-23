@@ -1,8 +1,13 @@
 packages:
+  ApolloAutomation.AIR-1: # name of package/project
+    url: https://github.com/ApolloAutomation/AIR-1 # url of the repository
+    ref: main # branch, tag or commit SHA
+    files: [Integrations/ESPHome/AIR-1.yaml] # Path to config from base repo URL
+    refresh: 1min # how often to sync updates from the remote url
   remote_package:
     url: https://github.com/lcgreenwald/AIR-1/
     ref: main
     files:
       - Integrations/ESPHome/MyCustom.yaml
       - Integrations/ESPHome/InstantAQI.yaml
-    refresh: 0d
+    refresh: 1d
