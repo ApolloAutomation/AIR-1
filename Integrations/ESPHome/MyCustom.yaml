@@ -76,5 +76,9 @@ text_sensor:
       else {
         return std::string("Very Poor");}
         
+  - platform: wifi_info
+    ip_address:
+      name: " IP"
+      icon: "mdi:ip-outline"
 
 
