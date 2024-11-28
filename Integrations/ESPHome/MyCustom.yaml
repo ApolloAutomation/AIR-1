@@ -27,6 +27,7 @@ number:
 
 sensor:
   - platform: scd4x
+    id: !extend scd40
     humidity:
       name: "SCD40 Humidity"
       id: "humidity"
