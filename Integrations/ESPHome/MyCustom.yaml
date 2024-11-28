@@ -44,7 +44,6 @@ sensor:
     temperature:
       name: "SCD40 Temperature"
       id: "temperature"
-      accuracy_decimals: 1
       filters:
         - lambda: return x - id(scd40_temperature_offset).state;
 
