@@ -1,3 +1,80 @@
+number:
+  - platform: template
+    name: SCD40 Humidity Offset
+    id: scd40_humidity_offset
+    restore_value: true
+    initial_value: 0
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "%"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+  - platform: template
+    name: SCD40 Temperature Offset
+    id: scd40_temperature_offset
+    initial_value: 6.2
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+sensor:
+  - platform: scd4x
+    humidity:
+      name: "SCD40 Humidity"
+      id: "humidity"
+      filters:
+        - lambda: return x - id(scd40_humidity_offset).state;
+    temperature:
+      name: "SCD40 Temperature"
+      id: "temperature"
+      accuracy_decimals: 1
+      filters:
+        - lambda: return x - id(scd40_temperature_offset).state;
+
+text_sensor:
+  - id: !remove voc_quality
+
+  - platform: template
+    name: "VOC Quality"
+    id: voc_quality
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(sen55_voc).state < 150) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 250) {
+        return std::string("Moderate");} 
+      else if (id(sen55_voc).state < 400) {
+        return std::string("High");} 
+      else {
+        return std::string("Very High");}
+
+  - platform: template
+    name: "CO2 Quality"
+    id: co2_ppm
+    icon: mdi:air-filter
+    lambda: |-
+      if (id(co2).state < 1000) {
+        return std::string("Good");} 
+      else if (id(sen55_voc).state < 2000) {
+        return std::string("Acceptable");} 
+      else if (id(sen55_voc).state < 5000) {
+        return std::string("Poor");} 
+      else {
+        return std::string("Very Poor");}
+        
+  - platform: wifi_info
+    ip_address:
+      name: " IP"
+      icon: "mdi:ip-outline"
+
 light:
   - platform: esp32_rmt_led_strip
     id: !extend rgb_light
@@ -43,82 +120,3 @@ light:
           name: Flicker Effect With Custom Values
           alpha: 95%
           intensity: 1.5%
-
-
-text_sensor:
-  - id: !remove voc_quality
-
-  - platform: template
-    name: "VOC Quality"
-    id: voc_quality
-    icon: mdi:air-filter
-    lambda: |-
-      if (id(sen55_voc).state < 150) {
-        return std::string("Good");} 
-      else if (id(sen55_voc).state < 250) {
-        return std::string("Moderate");} 
-      else if (id(sen55_voc).state < 400) {
-        return std::string("High");} 
-      else {
-        return std::string("Very High");}
-
-  - platform: template
-    name: "CO2 Quality"
-    id: co2_ppm
-    icon: mdi:air-filter
-    lambda: |-
-      if (id(co2).state < 1000) {
-        return std::string("Good");} 
-      else if (id(sen55_voc).state < 2000) {
-        return std::string("Acceptable");} 
-      else if (id(sen55_voc).state < 5000) {
-        return std::string("Poor");} 
-      else {
-        return std::string("Very Poor");}
-        
-  - platform: wifi_info
-    ip_address:
-      name: " IP"
-      icon: "mdi:ip-outline"
-
-number:
-  - platform: template
-    name: SCD40 Humidity Offset
-    id: scd40_humidity_offset
-    restore_value: true
-    initial_value: 0
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "%"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-  - platform: template
-    name: SCD40 Temperature Offset
-    id: scd40_temperature_offset
-    initial_value: 6.2
-    min_value: -70.0
-    max_value: 70.0
-    entity_category: "CONFIG"
-    unit_of_measurement: "°C"
-    optimistic: true
-    update_interval: never
-    step: 0.1
-    mode: box
-
-sensor:
-  - platform: scd4x
-    humidity:
-      name: "SCD40 Humidity"
-      id: "humidity"
-      filters:
-        - lambda: return x.state;
-#        - lambda: return x - id(scd40_humidity_offset).state;
-    temperature:
-      name: "SCD40 Temperature"
-      id: "temperature"
-      filters:
-        - lambda: return x - id(scd40_temperature_offset).state;
-
