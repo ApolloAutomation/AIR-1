@@ -28,6 +28,14 @@ number:
 sensor:
   - platform: scd4x
     id: !extend scd40
+    co2:
+      name: "CO2"
+      id: "co2"
+    automatic_self_calibration: false
+    update_interval: 60s
+    measurement_mode: "periodic"
+    i2c_id: bus_a
+    ambient_pressure_compensation_source: dps310pressure
     humidity:
       name: "SCD40 Humidity"
       id: "humidity"
