@@ -84,7 +84,7 @@ text_sensor:
 number:
   - platform: template
     name: SCD40 Humidity Offset
-    id: scd40_humidity_offset
+    id: !extend scd40_humidity_offset
     restore_value: true
     initial_value: 0
     min_value: -70.0
@@ -97,7 +97,7 @@ number:
     mode: box
   - platform: template
     name: SCD40 Temperature Offset
-    id: scd40_temperature_offset
+    id: !extend scd40_temperature_offset
     initial_value: 6.2
     min_value: -70.0
     max_value: 70.0
@@ -112,12 +112,12 @@ sensor:
   - platform: scd4x
     humidity:
       name: "SCD40 Humidity"
-      id: "humidity"
+      id: !extend "humidity"
       filters:
         - lambda: return x - id(scd40_humidity_offset).state;
     temperature:
       name: "SCD40 Temperature"
-      id: "temperature"
+      id: !extend "temperature"
       filters:
         - lambda: return x - id(scd40_temperature_offset).state;
 
