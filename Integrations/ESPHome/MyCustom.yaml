@@ -25,31 +25,6 @@ number:
     step: 0.1
     mode: box
 
-sensor:
-  - id: !remove scd40
-
-  - platform: scd4x
-    id: scd40
-    co2:
-      name: "CO2"
-      id: "co2"
-    automatic_self_calibration: false
-    update_interval: 60s
-    measurement_mode: "periodic"
-    i2c_id: bus_a
-    ambient_pressure_compensation_source: dps310pressure
-    humidity:
-      name: "SCD40 Humidity"
-      id: "humidity"
-      accuracy_decimals: 0
-      filters:
-        - lambda: return x - id(scd40_humidity_offset).state;
-    temperature:
-      name: "SCD40 Temperature"
-      id: "temperature"
-      accuracy_decimals: 1
-      filters:
-        - lambda: return x - id(scd40_temperature_offset).state;
 
 text_sensor:
   - id: !remove voc_quality
