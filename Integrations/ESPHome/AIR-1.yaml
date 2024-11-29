@@ -164,6 +164,18 @@ sensor:
     measurement_mode: "periodic"
     i2c_id: bus_a
     ambient_pressure_compensation_source: dps310pressure
+    humidity:
+      name: "SCD40 Humidity"
+      id: "humidity"
+      accuracy_decimals: 0
+      filters:
+        - lambda: return x - id(scd40_humidity_offset).state;
+    temperature:
+      name: "SCD40 Temperature"
+      id: "temperature"
+      accuracy_decimals: 1
+      filters:
+        - lambda: return x - id(scd40_temperature_offset).state;
 
   - platform: dps310
     id: dps_310

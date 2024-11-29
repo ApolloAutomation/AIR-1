@@ -26,8 +26,8 @@ number:
     mode: box
 
 sensor:
-#  - id: !remove scd40
-#
+  - id: !remove scd40
+
   - platform: scd4x
     id: scd40
     co2:
@@ -40,13 +40,13 @@ sensor:
     ambient_pressure_compensation_source: dps310pressure
     humidity:
       name: "SCD40 Humidity"
-#      id: "humidity"
+      id: "humidity"
       accuracy_decimals: 0
       filters:
         - lambda: return x - id(scd40_humidity_offset).state;
     temperature:
       name: "SCD40 Temperature"
-#      id: "temperature"
+      id: "temperature"
       accuracy_decimals: 1
       filters:
         - lambda: return x - id(scd40_temperature_offset).state;
