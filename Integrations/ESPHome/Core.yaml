@@ -1,18 +1,30 @@
 substitutions:
   name: apollo-air-1
-  version: "24.10.11.1"
+  version: "25.2.21.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
   board: esp32-c3-devkitm-1
   framework:
-    type: arduino
+    type: esp-idf
 
 api:
   on_client_connected:
-    - delay: 1s
-    - light.turn_off: rgb_light
-    - lambda: 'id(cycleCounter) = 30;'
+    - delay: 90s
+    - if:
+        condition:
+          or:
+            - binary_sensor.is_on: ota_mode
+            - switch.is_on: prevent_sleep
+        then:
+          - lambda: |- 
+              ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
+              id(deep_sleep_1).prevent_deep_sleep(); 
+        else:
+          - lambda: |-
+              id(reportAllValues).execute();
+          - deep_sleep.enter:
+              id: deep_sleep_1
   services:
     #Co2 Calibration Service
     - service: calibrate_co2_value
@@ -25,6 +37,7 @@ api:
     - service: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
+  reboot_timeout: 0s
 
 captive_portal:
 
@@ -59,6 +72,11 @@ i2c:
   scl: GPIO0
   id: bus_a
 
+deep_sleep:
+  id: deep_sleep_1
+  sleep_duration: 5min
+  run_duration: 2min
+
 number:
   - platform: template
     name: SEN55 Temperature Offset
@@ -86,6 +104,25 @@ number:
     update_interval: never
     step: 0.1
     mode: box
+  
+  - platform: template
+    name: "Sleep Duration"
+    id: deep_sleep_sleep_duration
+    min_value: 0
+    max_value: 800
+    step: 1
+    mode: box
+    update_interval: never
+    optimistic: true
+    restore_value: true
+    initial_value: 5
+    icon: "mdi:arrow-collapse-right"
+    entity_category: CONFIG
+    unit_of_measurement: "min"
+    on_value:
+      then:
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(x * 60 * 1000);
     
 
 binary_sensor:
@@ -107,15 +144,40 @@ binary_sensor:
     on_release:
       then:
         - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 8000) {
-              // Remove Wifi
+            if (millis() - id(button_press_timestamp) >= 10000) {
+              id(prevent_sleep).turn_on();
               id(factory_reset_switch).turn_on();
             }
-            else if (millis() - id(button_press_timestamp) >= 1000) {
+            else if (millis() - id(button_press_timestamp) >= 3000) {
+              //Turn Prevent Sleep On
+              id(prevent_sleep).turn_on();
+              //Prevent Sleep
+              id(deep_sleep_1).prevent_deep_sleep();
+            }
+            else {
+              // StatusCheck
+              id(statusCheck).execute();
+              delay(3000);
               id(testCycleCount) = 0;
               id(runTest) = true;
               id(testScript).execute();
             }
+  - platform: homeassistant
+    name: "OTA Mode"
+    id: ota_mode
+    entity_id: input_boolean.apollo_ota_mode
+    on_press:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_release:  
+      then:
+        - if:
+            condition:
+              switch.is_off: prevent_sleep
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
 
 sensor:
   - platform: internal_temperature
@@ -181,10 +243,11 @@ sensor:
       name: "SEN55 Humidity"
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
-      accuracy_decimals: 0
+      accuracy_decimals: 1
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
+      
       algorithm_tuning:
         #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
@@ -261,7 +324,6 @@ light:
     id: rgb_light
     name: "RGB Light"
     pin: GPIO3
-    rmt_channel: 0
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 3
@@ -279,8 +341,6 @@ light:
           update_interval: 100ms
           min_brightness: 50%
           max_brightness: 100%
-
-
 
 button:
   - platform: restart
@@ -323,14 +383,35 @@ text_sensor:
         return std::string("Abnormal");} 
       else if (id(sen55_voc).state < 400) {
         return std::string("Very abnormal");} 
-      else {
+      else if (id(sen55_voc).state >= 400) {
         return std::string("Extremely abnormal");}
+      else {
+        return std::string("Unknown");}
 
 switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
- 
+
+  - platform: template
+    name: "Prevent Sleep"
+    id: prevent_sleep
+    icon: mdi:sleep
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - lambda: |- 
+            id(deep_sleep_1).prevent_deep_sleep();
+    on_turn_off:
+      then:
+        - if:
+            condition:
+              binary_sensor.is_off: ota_mode
+            then:
+              - lambda: |- 
+                  id(deep_sleep_1).allow_deep_sleep();
 
 script:
   - id: testScript      
@@ -399,3 +480,53 @@ script:
                     blue: 0%
                 - light.turn_off:
                     id: rgb_light
+
+  - id: statusCheck
+    then:
+      - if:
+          condition:
+            - lambda: 'return id(ink_ha_connected).state;'
+          then:
+            - logger.log: "Apollo Automation: Connected To HA"
+            - light.turn_on: 
+                id: rgb_light
+                brightness: 100%
+                red: 0%
+                green: 0%
+                blue: 100%
+          else:
+            - if:
+                condition:
+                  - wifi.connected
+                then:
+                  - logger.log: "Apollo Automation: Connected To Wifi"
+                  - light.turn_on: 
+                      id: rgb_light
+                      brightness: 100%
+                      red: 0%
+                      green: 100%
+                      blue: 0%
+                else:
+                  - logger.log: "Apollo Automation: Not Connected To Wifi"
+                  - light.turn_on: 
+                      id: rgb_light
+                      brightness: 100%
+                      red: 100%
+                      green: 100%
+                      blue: 0%
+      - delay: 5s
+      - light.turn_off: rgb_light
+  - id: reportAllValues
+    then:
+      - component.update: sen55
+      - component.update: mics4514
+      - component.update: dps_310
+      - component.update: scd40
+      - component.update: wifi_signal_db
+      - component.update: sys_esp_temperature
+      - component.update: sys_uptime
+      - component.update: pm0_3_to_1
+      - component.update: pm1_to_2_5
+      - component.update: pm2_5_to_4
+      - component.update: pm4_to_10
+      - component.update: voc_quality
