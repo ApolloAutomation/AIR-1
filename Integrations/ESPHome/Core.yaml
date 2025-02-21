@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "24.12.6.1"
+  version: "25.2.21.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -324,7 +324,6 @@ light:
     id: rgb_light
     name: "RGB Light"
     pin: GPIO3
-    rmt_channel: 0
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 3

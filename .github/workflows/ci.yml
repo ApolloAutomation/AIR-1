@@ -1,22 +1,82 @@
-name: CI
-
+name: Publish
 on:
-  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The version of the firmware to build'
+        required: true
+  release:
+    types: [published]
 
 jobs:
-  ci:
-    name: Building ${{ matrix.file }}
+  build-firmware:
+    name: Build And Release
+    uses: esphome/workflows/.github/workflows/build.yml@main
+    with:
+      files: |
+        Integrations/ESPHome/AIR-1_Factory.yaml
+      esphome-version: stable
+      combined-name: firmware
+      release-summary: ${{ github.event_name == 'release' && github.event.release.body || '' }}
+      release-url: ${{ github.event_name == 'release' && github.event.release.html_url || '' }}
+      release-version: ${{ (github.event_name == 'release' && github.event.release.tag_name) || (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
+  
+  build-site:
+    name: Build Site
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        file:
-          - Integrations/ESPHome/AIR-1.yaml
-          - Integrations/ESPHome/AIR-1_BLE.yaml
-          - Integrations/ESPHome/AIR-1_Factory.yaml
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4.1.7
-      - name: Build ESPHome firmware to verify configuration
-        uses: esphome/build-action@v3.1.0
+      - name: Build
+        uses: actions/jekyll-build-pages@v1.0.13
         with:
-          yaml_file: ${{ matrix.file }}
+          source: ./static
+          destination: ./output
+      - name: Upload
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: site
+          path: output
+
+  publish:
+    name: Publish to GitHub Pages
+    runs-on: ubuntu-latest
+    needs:
+      - build-firmware
+      - build-site
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4.1.8
+        with:
+          name: firmware
+          path: firmware
+
+      - name: Copy firmware and manifest
+        run: |-
+          mkdir -p output/firmware
+          cp -r firmware/${{ needs.build-firmware.outputs.version }}/* output/firmware/
+
+      - uses: actions/download-artifact@v4.1.8
+        with:
+          name: site
+          path: output
+
+      - uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: output
+          retention-days: 1
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5.0.0
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4.0.5
