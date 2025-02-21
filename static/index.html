@@ -81,10 +81,12 @@
     <div class="content">
       <h1>Apollo AIR-1 Installer</h1>
       
-      <p class="button-row" align="center">
-        <esp-web-install-button manifest="./artifact/manifest.json">
-        </esp-web-install-button>
-      </p>
+      <div class="button-row" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
+        <div>
+          <p>AIR-1 Firmware</p>
+          <esp-web-install-button manifest="./firmware/manifest.json"></esp-web-install-button>
+        </div>
+      </div>
 
       <div class="footer">
         <a href="https://github.com/ApolloAutomation/AIR-1"
