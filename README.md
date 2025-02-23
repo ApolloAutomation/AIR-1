@@ -29,4 +29,4 @@ Links:
 Discord (Support/feedback/discussion/future products): [https://dsc.gg/ApolloAutomation] \
 Shop: [https://apolloautomation.com](https://apolloautomation.com/products/air-1) \
 Wiki: [https://wiki.apolloautomation.com](https://wiki.apolloautomation.com/) \
-3D Files: [https://www.printables.com/model/932001-apollo-automation-air-1-air-quality-sensor-for-hom] (https://www.printables.com/model/932001-apollo-automation-air-1-air-quality-sensor-for-hom)
+3D Files: [https://www.printables.com/model/932001-apollo-automation-air-1-air-quality-sensor-for-hom](https://www.printables.com/model/932001-apollo-automation-air-1-air-quality-sensor-for-hom)

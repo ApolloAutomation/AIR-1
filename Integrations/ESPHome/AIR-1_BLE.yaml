@@ -10,7 +10,23 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2024.6.4
+  min_version: 2025.2.0
+  on_boot:
+    priority: 500
+    then:
+      - lambda: |-
+          id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+      - if:
+          condition:
+            or:
+              - binary_sensor.is_on: ota_mode
+              - switch.is_on: prevent_sleep
+          then:
+             - lambda: |- 
+                ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                id(deep_sleep_1).prevent_deep_sleep(); 
+  on_shutdown:
+    - light.turn_off: rgb_light
 
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
@@ -23,15 +39,13 @@ ota:
 
 bluetooth_proxy:
   active: true
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
 
 wifi:
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
 packages:
-  remote_package:
-    url: https://github.com/ApolloAutomation/AIR-1/
-    ref: main
-    files:
-      - Integrations/ESPHome/Core.yaml
-    refresh: 0d
+  core: !include Core.yaml
