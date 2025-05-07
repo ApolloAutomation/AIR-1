@@ -300,6 +300,7 @@ sensor:
     disabled_by_default: true
     lambda: return id(pm_10_0).state - id(pm_4_0).state;
     unit_of_measurement: "µg/m³"
+    state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
 
