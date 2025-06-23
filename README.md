@@ -1,11 +1,8 @@
 # Apollo AIR-1
 
-![Pen no dust](https://github.com/ApolloAutomation/AIR-1/assets/24777085/183af36d-4611-4cb3-af1e-43b84d4d201a)
-
+![air-1-image](https://github.com/user-attachments/assets/09e5b0a2-0585-4480-8433-8d6efd9c7a69)
 
 Key Features of the AIR-1 Sensor:
-
-MiCS-4514 Below have individual gas % readout: CO, C2H5OH (Alcohol), H2, NO2, and NH3
 
 SCD40: CO2 and includes temperature and humidity sensing capabilities. 
 
