@@ -1,0 +1,36 @@
+name-template: 'Release v$NEXT_PATCH_VERSION'
+tag-template: "$RESOLVED_VERSION"
+change-template: "- #$NUMBER $TITLE @$AUTHOR"
+sort-direction: ascending
+
+categories:
+  - title: "🚨 Breaking changes"
+    labels:
+      - "breaking-change"
+  - title: "✨ New features"
+    labels:
+      - "new-feature"
+  - title: "🐛 Bug fixes"
+    labels:
+      - "bugfix"
+  - title: "⬆️ Dependency updates"
+    collapse-after: 5
+    labels:
+      - "dependency-update"
+
+
+include-labels:
+  - "bugfix"
+  - "new-feature"
+  - "breaking-change"
+
+no-changes-template: '- No changes'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/ApolloAutomation/AIR-1/compare/$PREVIOUS_TAG...$RESOLVED_VERSION.1
+
+   Be sure to 🌟 this repository for updates!
