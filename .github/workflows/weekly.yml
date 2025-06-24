@@ -1,21 +1,11 @@
-name: CI
+name: Weekly Firmware Build
 
 on:
-  pull_request:
-
-permissions:
-  # Allow GITHUB_TOKEN to add labels to pull requests
-  pull-requests: write
-  issues: write
-  contents: read
-  id-token: write
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
-  label-check:
-    name: Label Check
-    uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@main
-    
-  ci:
+  build:
     name: Building ${{ matrix.file }}
     runs-on: ubuntu-latest
     strategy:
