@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "25.2.21.1"
+  version: "25.6.24.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -136,6 +136,7 @@ binary_sensor:
       mode:
         input: true
         pullup: true
+      ignore_strapping_warning: true
     id: reset_button  
     on_press:
       then:
@@ -278,7 +279,7 @@ sensor:
     name: "PM 1 To 2.5 µm"
     id: pm1_to_2_5
     disabled_by_default: true
-    lambda: return id(pm_2_5).state - id(pm_1_0).state;
+    lambda: return std::max(0.0f, id(pm_2_5).state - id(pm_1_0).state);
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
@@ -288,7 +289,7 @@ sensor:
     name: "PM 2.5 To 4 µm"
     id: pm2_5_to_4
     disabled_by_default: true
-    lambda: return id(pm_4_0).state - id(pm_2_5).state;
+    lambda: return std::max(0.0f, id(pm_4_0).state - id(pm_2_5).state);
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
@@ -298,7 +299,7 @@ sensor:
     name: "PM 4 To 10 µm"
     id: pm4_to_10
     disabled_by_default: true
-    lambda: return id(pm_10_0).state - id(pm_4_0).state;
+    lambda: return std::max(0.0f, id(pm_10_0).state - id(pm_4_0).state);
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
