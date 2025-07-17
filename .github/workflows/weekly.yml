@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Building ${{ matrix.file }}
+    name: Building ${{ matrix.file }} / ESPHome ${{ matrix.esphome-version }} / ESPHome ${{ matrix.esphome-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
