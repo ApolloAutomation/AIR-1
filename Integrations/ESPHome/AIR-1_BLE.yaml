@@ -28,6 +28,8 @@ esphome:
   on_shutdown:
     - light.turn_off: rgb_light
 
+logger:
+
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
   import_full_config: false
