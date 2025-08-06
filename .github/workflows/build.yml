@@ -26,7 +26,7 @@ jobs:
       device-name: air-1
       yaml-files: |
         Integrations/ESPHome/AIR-1_Factory.yaml
-      firmware-names: "_Factory:firmware"
+      firmware-names: "1_Factory:firmware"
       core-yaml-path: Integrations/ESPHome/Core.yaml
       esphome-version: stable
       # Bypass check if manually triggered with bypass option
