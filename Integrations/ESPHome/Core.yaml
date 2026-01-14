@@ -349,6 +349,62 @@ sensor:
       accuracy_decimals: 2
       disabled_by_default: true
 
+  # Particle number concentration ranges (EXPERIMENTAL)
+  - platform: template
+    name: "PM 0.3 To 0.5 µm Number"
+    id: pm0_3_to_0_5_number
+    disabled_by_default: true
+    lambda: return id(pm_0_5_number).state;
+    unit_of_measurement: "#/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "PM 0.5 To 1 µm Number"
+    id: pm0_5_to_1_number
+    disabled_by_default: true
+    lambda: return std::max(0.0f, id(pm_1_0_number).state - id(pm_0_5_number).state);
+    unit_of_measurement: "#/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "PM 1 To 2.5 µm Number"
+    id: pm1_to_2_5_number
+    disabled_by_default: true
+    lambda: return std::max(0.0f, id(pm_2_5_number).state - id(pm_1_0_number).state);
+    unit_of_measurement: "#/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "PM 2.5 To 4 µm Number"
+    id: pm2_5_to_4_number
+    disabled_by_default: true
+    lambda: return std::max(0.0f, id(pm_4_0_number).state - id(pm_2_5_number).state);
+    unit_of_measurement: "#/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+    accuracy_decimals: 0
+
+  - platform: template
+    name: "PM 4 To 10 µm Number"
+    id: pm4_to_10_number
+    disabled_by_default: true
+    lambda: return std::max(0.0f, id(pm_10_0_number).state - id(pm_4_0_number).state);
+    unit_of_measurement: "#/m³"
+    state_class: measurement
+    icon: mdi:air-filter
+    update_interval: 10s
+    accuracy_decimals: 0
+
   - platform: mics_4514
     id: mics4514
     nitrogen_dioxide:
