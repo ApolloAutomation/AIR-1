@@ -8,6 +8,12 @@ esp32:
   framework:
     type: esp-idf
 
+# EXPERIMENTAL: Include custom component for SEN5x particle number concentration
+external_components:
+  - source:
+      type: local
+      path: custom_components
+
 api:
   on_client_connected:
     - delay: 90s
@@ -304,6 +310,44 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
+
+  # EXPERIMENTAL: SEN5x Particle Number Concentration Sensors
+  # Uses undocumented I2C command 0x0413
+  # Reference: Sensirion_SEN5x_Read_Mass_and_Number_Concentrations.pdf
+  - platform: sen5x_number
+    id: sen5x_number_component
+    address: 0x69
+    update_interval: 10s
+    pm_0_5_number:
+      name: "PM <0.5µm Number concentration"
+      id: pm_0_5_number
+      accuracy_decimals: 0
+      disabled_by_default: true
+    pm_1_0_number:
+      name: "PM <1µm Number concentration"
+      id: pm_1_0_number
+      accuracy_decimals: 0
+      disabled_by_default: true
+    pm_2_5_number:
+      name: "PM <2.5µm Number concentration"
+      id: pm_2_5_number
+      accuracy_decimals: 0
+      disabled_by_default: true
+    pm_4_0_number:
+      name: "PM <4µm Number concentration"
+      id: pm_4_0_number
+      accuracy_decimals: 0
+      disabled_by_default: true
+    pm_10_0_number:
+      name: "PM <10µm Number concentration"
+      id: pm_10_0_number
+      accuracy_decimals: 0
+      disabled_by_default: true
+    typical_particle_size:
+      name: "Typical Particle Size"
+      id: typical_particle_size
+      accuracy_decimals: 2
+      disabled_by_default: true
 
   - platform: mics_4514
     id: mics4514
