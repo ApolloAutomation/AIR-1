@@ -398,6 +398,11 @@ text_sensor:
       else {
         return std::string("Unknown");}
 
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: wifi_ip
+
 switch:
   - platform: factory_reset
     id: factory_reset_switch
