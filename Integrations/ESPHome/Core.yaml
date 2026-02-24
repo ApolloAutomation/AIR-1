@@ -4,7 +4,8 @@ substitutions:
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
-  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  flash_size: 4MB
   framework:
     type: esp-idf
 
@@ -25,16 +26,16 @@ api:
               id(reportAllValues).execute();
           - deep_sleep.enter:
               id: deep_sleep_1
-  services:
-    #Co2 Calibration Service
-    - service: calibrate_co2_value
+  actions:
+    #Co2 Calibration Action
+    - action: calibrate_co2_value
       variables:
         co2_ppm: float
       then:
         - scd4x.perform_forced_calibration:
             value: !lambda "return co2_ppm;"
             id: scd40
-    - service: sen55_clean
+    - action: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
   reboot_timeout: 0s
@@ -43,6 +44,7 @@ captive_portal:
 
 web_server:
   port: 80
+  version: 3
 
 globals:
   - id: cycleCounter
