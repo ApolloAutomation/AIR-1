@@ -398,6 +398,17 @@ text_sensor:
       else {
         return std::string("Unknown");}
 
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
+    entity_category: "diagnostic"
+  - platform: template
+    name: "Apollo Firmware Version"
+    id: apollo_firmware_version
+    lambda: |-
+      return {"${version}"};
+    entity_category: "diagnostic"
+
 switch:
   - platform: factory_reset
     id: factory_reset_switch
