@@ -313,6 +313,7 @@ sensor:
     pm_2_5: pm_2_5
     pm_10_0: pm_10_0
     calculation_type: AQI
+    device_class: aqi
 
   - platform: mics_4514
     id: mics4514
