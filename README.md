@@ -1,6 +1,6 @@
 # Apollo AIR-1
 
-[![Apollo AIR-1](https://img.youtube.com/vi/Tqq4Si1y34c/maxresdefault.jpg)](https://www.youtube.com/watch?v=Tqq4Si1y34c)
+[![Apollo AIR-1](https://img.youtube.com/vi/Tqq4Si1y34c/hqdefault.jpg)](https://www.youtube.com/watch?v=Tqq4Si1y34c)
 
 
 Key Features of the AIR-1 Sensor:
