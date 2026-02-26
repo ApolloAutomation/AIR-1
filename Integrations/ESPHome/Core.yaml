@@ -552,3 +552,4 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
+      - component.update: apollo_firmware_version
