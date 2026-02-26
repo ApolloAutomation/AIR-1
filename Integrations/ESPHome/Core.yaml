@@ -402,6 +402,7 @@ text_sensor:
     name: "ESPHome Version"
     hide_timestamp: true
     entity_category: "diagnostic"
+    entity_category: "diagnostic"
   - platform: template
     name: "Apollo Firmware Version"
     id: apollo_firmware_version
