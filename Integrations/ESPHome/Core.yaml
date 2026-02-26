@@ -227,7 +227,9 @@ sensor:
       name: "DPS310 Pressure"
       id: dps310pressure
       filters:
-        - lambda: return x + id(dps310_pressure_offset).state;
+        - lambda: |-
+          float offset = id(dps310_pressure_offset).state;
+          return isnan(offset) ? x : x + offset;
     temperature:
       id: dps310temperature
     update_interval: 30s
