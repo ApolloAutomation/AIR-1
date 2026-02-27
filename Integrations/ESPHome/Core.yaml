@@ -1,10 +1,11 @@
 substitutions:
   name: apollo-air-1
-  version: "25.12.18.2"
+  version: "26.2.24.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
-  board: esp32-c3-devkitm-1
+  variant: esp32c3
+  flash_size: 4MB
   framework:
     type: esp-idf
 
@@ -25,16 +26,16 @@ api:
               id(reportAllValues).execute();
           - deep_sleep.enter:
               id: deep_sleep_1
-  services:
-    #Co2 Calibration Service
-    - service: calibrate_co2_value
+  actions:
+    #Co2 Calibration Action
+    - action: calibrate_co2_value
       variables:
         co2_ppm: float
       then:
         - scd4x.perform_forced_calibration:
             value: !lambda "return co2_ppm;"
             id: scd40
-    - service: sen55_clean
+    - action: sen55_clean
       then:
         - sen5x.start_fan_autoclean: sen55
   reboot_timeout: 0s
@@ -43,6 +44,7 @@ captive_portal:
 
 web_server:
   port: 80
+  version: 3
 
 globals:
   - id: cycleCounter
@@ -104,7 +106,21 @@ number:
     update_interval: never
     step: 0.1
     mode: box
-  
+  - platform: template
+    name: "DPS310 Pressure Offset"
+    id: dps310_pressure_offset
+    disabled_by_default: true
+    restore_value: true
+    initial_value: 0.0
+    min_value: -100.0
+    max_value: 100.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "hPa"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
   - platform: template
     name: "Sleep Duration"
     id: deep_sleep_sleep_duration
@@ -212,6 +228,10 @@ sensor:
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
+      filters:
+        - lambda: |-
+            float offset = id(dps310_pressure_offset).state;
+            return isnan(offset) ? x : x + offset;
     temperature:
       id: dps310temperature
     update_interval: 30s
@@ -306,6 +326,14 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
+
+  - platform: aqi
+    name: "NowCast AQI"
+    id: nowcast_aqi
+    pm_2_5: pm_2_5
+    pm_10_0: pm_10_0
+    calculation_type: AQI
+    device_class: aqi
 
   - platform: mics_4514
     id: mics4514
@@ -403,6 +431,17 @@ text_sensor:
       name: "IP Address"
       id: wifi_ip
       entity_category: "diagnostic"
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
+    entity_category: "diagnostic"
+  - platform: template
+    name: "Apollo Firmware Version"
+    id: apollo_firmware_version
+    lambda: |-
+      return {"${version}"};
+    update_interval: never
+    entity_category: "diagnostic"
 
 switch:
   - platform: factory_reset
@@ -546,3 +585,4 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
+      - component.update: apollo_firmware_version

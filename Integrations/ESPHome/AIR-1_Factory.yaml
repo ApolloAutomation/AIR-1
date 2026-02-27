@@ -3,9 +3,6 @@ esphome:
   friendly_name: Apollo AIR-1
   comment: Apollo AIR-1 Factory
   name_add_mac_suffix: true
-  platformio_options:
-    board_build.flash_mode: dio
-
   project:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
@@ -52,11 +49,6 @@ esp32_improv:
   authorizer: none
 
 wifi:
-  on_connect:
-    - delay: 5s
-    - ble.disable:
-  on_disconnect:
-    - ble.enable:
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
