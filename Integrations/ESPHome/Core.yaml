@@ -426,6 +426,11 @@ text_sensor:
       else {
         return std::string("Unknown");}
 
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: wifi_ip
+      entity_category: "diagnostic"
   - platform: version
     name: "ESPHome Version"
     hide_timestamp: true
