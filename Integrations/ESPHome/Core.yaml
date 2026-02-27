@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "25.12.18.2"
+  version: "26.2.24.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -106,7 +106,21 @@ number:
     update_interval: never
     step: 0.1
     mode: box
-  
+  - platform: template
+    name: "DPS310 Pressure Offset"
+    id: dps310_pressure_offset
+    disabled_by_default: true
+    restore_value: true
+    initial_value: 0.0
+    min_value: -100.0
+    max_value: 100.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "hPa"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
   - platform: template
     name: "Sleep Duration"
     id: deep_sleep_sleep_duration
@@ -214,6 +228,10 @@ sensor:
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
+      filters:
+        - lambda: |-
+            float offset = id(dps310_pressure_offset).state;
+            return isnan(offset) ? x : x + offset;
     temperature:
       id: dps310temperature
     update_interval: 30s
