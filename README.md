@@ -11,6 +11,8 @@ SCD40: CO2 and includes temperature and humidity sensing capabilities.
 
 SEN55: Particulate matter (PM1, PM2.5, PM10), VOCs, NOx, humidity, and temperature. 
 
+DPS368: Barometric air pressure and temperature.
+
 Dimensions & Design: 
 
 The AIR-1 measures just 61mm x 61mm x 30mm, and we have focused on efficient heat management within this small package to maintain sensor accuracy. This includes a thoughtful PCB layout and case design, incorporating ventilation and strategic component placement. 
