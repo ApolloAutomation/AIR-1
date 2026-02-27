@@ -400,6 +400,18 @@ text_sensor:
       else {
         return std::string("Unknown");}
 
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
+    entity_category: "diagnostic"
+  - platform: template
+    name: "Apollo Firmware Version"
+    id: apollo_firmware_version
+    lambda: |-
+      return {"${version}"};
+    update_interval: never
+    entity_category: "diagnostic"
+
 switch:
   - platform: factory_reset
     id: factory_reset_switch
@@ -542,3 +554,4 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
+      - component.update: apollo_firmware_version
