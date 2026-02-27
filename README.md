@@ -1,6 +1,6 @@
 # Apollo AIR-1
 
-![Pen no dust](https://github.com/ApolloAutomation/AIR-1/assets/24777085/183af36d-4611-4cb3-af1e-43b84d4d201a)
+[![Apollo AIR-1](https://img.youtube.com/vi/Tqq4Si1y34c/hqdefault.jpg)](https://www.youtube.com/watch?v=Tqq4Si1y34c)
 
 
 Key Features of the AIR-1 Sensor:
@@ -11,7 +11,7 @@ SCD40: CO2 and includes temperature and humidity sensing capabilities.
 
 SEN55: Particulate matter (PM1, PM2.5, PM10), VOCs, NOx, humidity, and temperature. 
 
-DPS310: Barometric air pressure and temperature.
+DPS368: Barometric air pressure and temperature.
 
 Dimensions & Design: 
 
