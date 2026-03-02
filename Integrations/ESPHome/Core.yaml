@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.2.24.1"
+  version: "26.3.2.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
 esp32:
@@ -88,7 +88,7 @@ number:
     min_value: -70.0
     max_value: 70.0
     entity_category: "CONFIG"
-    unit_of_measurement: "Â°C"
+    unit_of_measurement: "°C"
     optimistic: true
     update_interval: never
     step: 0.1
@@ -240,19 +240,19 @@ sensor:
   - platform: sen5x
     id: sen55
     pm_1_0:
-      name: "PM <1Âµm Weight concentration"
+      name: "PM <1µm Weight concentration"
       id: pm_1_0
       accuracy_decimals: 1
     pm_2_5:
-      name: "PM <2.5Âµm Weight concentration"
+      name: "PM <2.5µm Weight concentration"
       id: pm_2_5
       accuracy_decimals: 1
     pm_4_0:
-      name: "PM <4Âµm Weight concentration"
+      name: "PM <4µm Weight concentration"
       id: pm_4_0
       accuracy_decimals: 1
     pm_10_0:
-      name: "PM <10Âµm Weight concentration"
+      name: "PM <10µm Weight concentration"
       id: pm_10_0
       accuracy_decimals: 1
     temperature:
@@ -288,41 +288,41 @@ sensor:
     update_interval: 10s
 
   - platform: template
-    name: "PM 0.3 To 1 Âµm"
+    name: "PM 0.3 To 1 µm"
     id: pm0_3_to_1
     disabled_by_default: true
     lambda: return id(pm_1_0).state;
-    unit_of_measurement: "Âµg/mÂ³"
+    unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
   
   - platform: template
-    name: "PM 1 To 2.5 Âµm"
+    name: "PM 1 To 2.5 µm"
     id: pm1_to_2_5
     disabled_by_default: true
     lambda: return std::max(0.0f, id(pm_2_5).state - id(pm_1_0).state);
-    unit_of_measurement: "Âµg/mÂ³"
+    unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
   
   - platform: template
-    name: "PM 2.5 To 4 Âµm"
+    name: "PM 2.5 To 4 µm"
     id: pm2_5_to_4
     disabled_by_default: true
     lambda: return std::max(0.0f, id(pm_4_0).state - id(pm_2_5).state);
-    unit_of_measurement: "Âµg/mÂ³"
+    unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
 
   - platform: template
-    name: "PM 4 To 10 Âµm"
+    name: "PM 4 To 10 µm"
     id: pm4_to_10
     disabled_by_default: true
     lambda: return std::max(0.0f, id(pm_10_0).state - id(pm_4_0).state);
-    unit_of_measurement: "Âµg/mÂ³"
+    unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
     update_interval: 10s
