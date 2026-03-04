@@ -11,6 +11,7 @@ esp32:
 
 api:
   on_client_connected:
+    - component.update: apollo_firmware_version
     - delay: 90s
     - if:
         condition:
