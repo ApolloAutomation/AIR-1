@@ -11,7 +11,9 @@ esp32:
 
 api:
   on_client_connected:
-    - component.update: apollo_firmware_version
+    - text_sensor.template.publish:
+        id: apollo_firmware_version
+        state: "${version}"
     - delay: 90s
     - if:
         condition:
@@ -441,7 +443,6 @@ text_sensor:
     id: apollo_firmware_version
     lambda: |-
       return {"${version}"};
-    update_interval: never
     entity_category: "diagnostic"
 
 switch:
@@ -586,4 +587,6 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
-      - component.update: apollo_firmware_version
+      - text_sensor.template.publish:
+          id: apollo_firmware_version
+          state: "${version}"
