@@ -30,7 +30,7 @@ jobs:
           - dev
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
       - name: Build ESPHome firmware to verify configuration
         uses: esphome/build-action@v7
         with:

@@ -15,5 +15,5 @@ jobs:
       uses: pozil/auto-assign-issue@v2
       with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          assignees: TrevorSchirmer
+          assignees: bharvey88
           numOfAssignee: 1
