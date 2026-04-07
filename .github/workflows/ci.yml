@@ -16,7 +16,7 @@ jobs:
     uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@main
     
   ci:
-    name: Building ${{ matrix.file }}
+    name: Building ${{ matrix.file }} / ESPHome ${{ matrix.esphome-version }} / ESPHome ${{ matrix.esphome-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:

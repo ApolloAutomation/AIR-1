@@ -3,9 +3,6 @@ esphome:
   friendly_name: Apollo AIR-1
   comment: Apollo AIR-1
   name_add_mac_suffix: true
-  platformio_options:
-    board_build.flash_mode: dio
-
   project:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
@@ -14,6 +11,9 @@ esphome:
   on_boot:
     priority: 500
     then:
+      - text_sensor.template.publish:
+          id: apollo_firmware_version
+          state: "${version}"
       - lambda: |-
           id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 1000);
       - if:
