@@ -217,7 +217,7 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
-    automatic_self_calibration: false
+    automatic_self_calibration: true
     update_interval: 60s
     measurement_mode: "periodic"
     i2c_id: bus_a
@@ -455,7 +455,7 @@ switch:
     entity_category: "config"
     on_turn_on:
       then:
-        - lambda: |- 
+        - lambda: |-
             id(deep_sleep_1).prevent_deep_sleep();
     on_turn_off:
       then:
@@ -463,11 +463,59 @@ switch:
             condition:
               binary_sensor.is_off: ota_mode
             then:
-              - lambda: |- 
+              - lambda: |-
                   id(deep_sleep_1).allow_deep_sleep();
 
+  - platform: template
+    name: "CO2 Auto Calibration"
+    id: co2_auto_calibration
+    icon: mdi:molecule-co2
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - script.execute:
+            id: setCo2AutoCalibration
+            enable: true
+    on_turn_off:
+      then:
+        - script.execute:
+            id: setCo2AutoCalibration
+            enable: false
+
 script:
-  - id: testScript      
+  - id: setCo2AutoCalibration
+    mode: restart
+    parameters:
+      enable: bool
+    then:
+      #The SCD40 forgets this setting on power loss and the scd4x component
+      #re-applies the YAML default during setup (~1.5s after boot), so when this
+      #runs at boot (via the restored switch state) wait for setup to finish first.
+      - if:
+          condition:
+            lambda: "return millis() < 20000;"
+          then:
+            - delay: 20s
+      #The sensor only accepts the ASC command while idle, so stop periodic
+      #measurement first, then restart it. Same sequence the component uses
+      #for forced calibration.
+      - lambda: |-
+          id(scd40).write_command((uint16_t) 0x3F86); //stop periodic measurement
+      - delay: 500ms
+      - lambda: |-
+          id(scd40).set_automatic_self_calibration(enable);
+          if (!id(scd40).write_command((uint16_t) 0x2416, (uint16_t) (enable ? 1 : 0))) {
+            ESP_LOGE("Apollo", "Failed to set CO2 auto calibration");
+          } else {
+            ESP_LOGI("Apollo", "CO2 auto calibration %s", enable ? "enabled" : "disabled");
+          }
+      - delay: 10ms
+      - lambda: |-
+          id(scd40).write_command((uint16_t) 0x21B1); //start periodic measurement
+
+  - id: testScript
     then:
       if: 
         condition:
