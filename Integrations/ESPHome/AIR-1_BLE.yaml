@@ -33,7 +33,7 @@ dashboard_import:
 
 ota:
   - platform: esphome
-    password: "apolloautomation"
+    password: ${ota_password}
     id: ota_esphome
 
 bluetooth_proxy:
