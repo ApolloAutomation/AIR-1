@@ -56,6 +56,8 @@ esp32_ble_tracker:
     active: false
 
 wifi:
+  on_connect:
+    - component.update: update_http_request
   ap:
     ssid: "Apollo AIR1 Hotspot"
 

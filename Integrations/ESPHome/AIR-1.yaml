@@ -53,6 +53,8 @@ update:
     source: https://apolloautomation.github.io/AIR-1/firmware/manifest.json
 
 wifi:
+  on_connect:
+    - component.update: update_http_request
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
