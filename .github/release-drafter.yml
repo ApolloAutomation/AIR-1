@@ -2,6 +2,7 @@ name-template: 'Release v$NEXT_PATCH_VERSION'
 tag-template: "$RESOLVED_VERSION"
 change-template: "- #$NUMBER $TITLE @$AUTHOR"
 sort-direction: ascending
+category-template: '**$TITLE**'
 
 categories:
   - title: "🚨 Breaking changes"
@@ -26,11 +27,9 @@ include-labels:
 
 no-changes-template: '- No changes'
 
+# The shared build workflow appends a Full Changelog compare link to the
+# release body (release-drafter cannot render 4-part version tags).
 template: |
-  ## What's Changed
+  **What's Changed**
 
   $CHANGES
-
-  **Full Changelog**: https://github.com/ApolloAutomation/AIR-1/compare/$PREVIOUS_TAG...$RESOLVED_VERSION.1
-
-   Be sure to 🌟 this repository for updates!
