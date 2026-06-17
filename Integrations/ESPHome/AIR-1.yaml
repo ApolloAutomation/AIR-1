@@ -7,7 +7,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2025.2.0
+  min_version: 2025.11.0
   on_boot:
     priority: 500
     then:
@@ -38,8 +38,23 @@ ota:
   - platform: esphome
     id: ota_esphome
     password: ${ota_password}
+  - platform: http_request
+    id: ota_managed
+
+http_request:
+  verify_ssl: true
+
+safe_mode:
+
+update:
+  - platform: http_request
+    id: update_http_request
+    name: Firmware Update
+    source: https://apolloautomation.github.io/AIR-1/firmware/manifest.json
 
 wifi:
+  on_connect:
+    - component.update: update_http_request
   ap:
     ssid: "Apollo AIR1 Hotspot"
 
