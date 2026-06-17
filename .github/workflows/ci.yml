@@ -4,17 +4,10 @@ on:
   pull_request:
 
 permissions:
-  # Allow GITHUB_TOKEN to add labels to pull requests
-  pull-requests: write
-  issues: write
   contents: read
   id-token: write
 
 jobs:
-  label-check:
-    name: Label Check
-    uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@main
-    
   ci:
     name: Building ${{ matrix.file }} / ESPHome ${{ matrix.esphome-version }} / ESPHome ${{ matrix.esphome-version }}
     runs-on: ubuntu-latest
