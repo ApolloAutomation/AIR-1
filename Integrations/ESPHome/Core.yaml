@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.6.10.1"
+  version: "26.6.25.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -84,6 +84,23 @@ deep_sleep:
   run_duration: 2min
 
 number:
+  - platform: template
+    name: "Air Quality LED Brightness"
+    id: air_quality_led_brightness
+    icon: mdi:brightness-6
+    optimistic: true
+    restore_value: true
+    entity_category: "config"
+    unit_of_measurement: "%"
+    min_value: 5
+    max_value: 100
+    step: 1
+    initial_value: 100
+    mode: slider
+    on_value:
+      then:
+        - script.execute: update_air_quality_led
+
   - platform: template
     name: SEN55 Temperature Offset
     id: sen55_temperature_offset
@@ -221,6 +238,12 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
+      on_value:
+        - if:
+            condition:
+              lambda: 'return id(air_quality_led_source).current_option() == "CO2";'
+            then:
+              - script.execute: update_air_quality_led
     automatic_self_calibration: true
     update_interval: 60s
     measurement_mode: "periodic"
@@ -274,7 +297,12 @@ sensor:
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
-      
+      on_value:
+        - if:
+            condition:
+              lambda: 'return id(air_quality_led_source).current_option() == "VOC Index";'
+            then:
+              - script.execute: update_air_quality_led
       algorithm_tuning:
         #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
@@ -338,6 +366,12 @@ sensor:
     pm_10_0: pm_10_0
     calculation_type: AQI
     device_class: aqi
+    on_value:
+      - if:
+          condition:
+            lambda: 'return id(air_quality_led_source).current_option() == "NowCast AQI";'
+          then:
+            - script.execute: update_air_quality_led
 
   - platform: mics_4514
     id: mics4514
@@ -488,6 +522,20 @@ switch:
             id: setCo2AutoCalibration
             enable: false
 
+select:
+  - platform: template
+    name: "Air Quality LED Source"
+    id: air_quality_led_source
+    icon: mdi:led-on
+    optimistic: true
+    restore_value: true
+    entity_category: "config"
+    options: ["Off", "NowCast AQI", "CO2", "VOC Index"]
+    initial_option: "Off"
+    on_value:
+      then:
+        - script.execute: update_air_quality_led
+
 script:
   - id: setCo2AutoCalibration
     mode: restart
@@ -635,3 +683,73 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
+
+  - id: update_air_quality_led
+    then:
+      - lambda: |-
+          // The select's restore_value publishes during component setup and
+          // fires on_value before rgb_light (esp32_rmt_led_strip) is
+          // initialized; touching the light then faults in schedule_show().
+          // Don't write the LED in the first few seconds after boot. The
+          // sensor/select/brightness triggers all run normally after that.
+          if (millis() < 5000) {
+            return;
+          }
+
+          // While statusCheck or testScript owns the LED (button-press status
+          // flash, boot self-test), leave rgb_light alone so this updater
+          // doesn't override their colors mid-display.
+          if (id(statusCheck).is_running() || id(testScript).is_running()) {
+            return;
+          }
+
+          const std::string src = id(air_quality_led_source).current_option();
+
+          if (src == "Off") {
+            id(rgb_light).turn_off().perform();
+            return;
+          }
+
+          // Map the selected metric to a severity band: 0=Good … 5=Hazardous.
+          // Each metric has its own scale; bands share one color table below.
+          int band = -1;
+          if (src == "NowCast AQI") {                // US EPA AQI
+            const float x = id(nowcast_aqi).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x <= 50)   band = 0;
+            else if (x <= 100)  band = 1;
+            else if (x <= 150)  band = 2;
+            else if (x <= 200)  band = 3;
+            else if (x <= 300)  band = 4;
+            else                band = 5;
+          } else if (src == "CO2") {                 // ppm, SCD40
+            const float x = id(co2).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x <= 800)  band = 0;
+            else if (x <= 1000) band = 1;
+            else if (x <= 1500) band = 2;
+            else if (x <= 2000) band = 3;
+            else if (x <= 2500) band = 4;
+            else                band = 5;
+          } else if (src == "VOC Index") {           // Sensirion VOC index (matches "VOC Quality" text sensor)
+            const float x = id(sen55_voc).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x < 80)    band = 0;
+            else if (x < 150)   band = 1;
+            else if (x < 250)   band = 2;
+            else if (x < 400)   band = 3;
+            else                band = 4;            // VOC scale tops out at "extremely abnormal"
+          }
+          if (band < 0) return;
+
+          auto call = id(rgb_light).turn_on();
+          call.set_brightness(id(air_quality_led_brightness).state / 100.0f);
+          switch (band) {
+            case 0: call.set_rgb(0.0f, 1.0f, 0.0f); break;   // Green  - Good
+            case 1: call.set_rgb(1.0f, 1.0f, 0.0f); break;   // Yellow - Moderate
+            case 2: call.set_rgb(1.0f, 0.5f, 0.0f); break;   // Orange - Unhealthy (Sensitive)
+            case 3: call.set_rgb(1.0f, 0.0f, 0.0f); break;   // Red    - Unhealthy
+            case 4: call.set_rgb(0.6f, 0.0f, 1.0f); break;   // Purple - Very Unhealthy
+            case 5: call.set_rgb(0.5f, 0.0f, 0.0f); break;   // Maroon - Hazardous
+          }
+          call.perform();
