@@ -142,6 +142,72 @@ number:
     step: 0.1
     mode: box
 
+  # Physics-based room temperature/humidity prediction.
+  # Research and coefficient fitting by Ellude (Apollo Discord).
+  # The Air-1 enclosure self-heats, so the on-board sensors read warmer/drier
+  # than the room. These CONFIG numbers feed the "Predicted Room *" template
+  # sensors below; defaults are the empirically fitted values and can be tuned
+  # per unit. They do not alter the stock SEN55/SCD40/DPS310 sensors.
+  - platform: template
+    name: "Physics Multiplier P"          # thermal-gradient multiplier
+    id: coefficient_p
+    disabled_by_default: true
+    restore_value: true
+    # Provisional value from Ellude; update once a better fit is available.
+    initial_value: 0.5357
+    min_value: 0.0000
+    max_value: 1.0000
+    entity_category: "CONFIG"
+    optimistic: true
+    update_interval: never
+    step: 0.0001
+    mode: box
+
+  - platform: template
+    name: "Baseline Offset"
+    id: baseline_offset
+    disabled_by_default: true
+    restore_value: true
+    initial_value: 0.0
+    min_value: -5.0
+    max_value: 5.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.01
+    mode: box
+
+  - platform: template
+    name: SCD40 Temperature Offset
+    id: scd40_temperature_offset
+    disabled_by_default: true
+    restore_value: true
+    initial_value: 0.0
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "°C"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
+  - platform: template
+    name: SCD40 Humidity Offset
+    id: scd40_humidity_offset
+    disabled_by_default: true
+    restore_value: true
+    initial_value: 0.0
+    min_value: -70.0
+    max_value: 70.0
+    entity_category: "CONFIG"
+    unit_of_measurement: "%"
+    optimistic: true
+    update_interval: never
+    step: 0.1
+    mode: box
+
   - platform: template
     name: "Sleep Duration"
     id: deep_sleep_sleep_duration
@@ -233,6 +299,102 @@ sensor:
     update_interval: 60s
     entity_category: "diagnostic"
 
+  # Room temperature prediction. Blends the three on-board temperature sensors
+  # and corrects for enclosure self-heating using the Physics Multiplier P /
+  # Baseline Offset CONFIG numbers above.
+  - platform: template
+    name: "Predicted Room Temperature"
+    id: predicted_room_temperature
+    disabled_by_default: true
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 2
+    update_interval: 10s
+    lambda: |-
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
+      float uptime = id(sys_uptime).state;
+      if (std::isnan(uptime) || uptime < 180.0) {
+        return NAN;
+      }
+
+      // Fetch Sensor data and coefficients
+      float t_sen = id(sen55_temperature).state;
+      float t_dps = id(dps310temperature).state;
+      float t_scd = id(scd40_temperature).state;
+      float p_val = id(coefficient_p).state;
+      float baseline = id(baseline_offset).state;
+
+      // Ensure all sensors and coefficients are valid numbers before predicting
+      if (std::isnan(t_sen) || std::isnan(t_dps) || std::isnan(t_scd) ||
+          std::isnan(p_val) || std::isnan(baseline)) {
+        return NAN;
+      }
+
+      // Estimate the temperature inside Air-1
+      float t_base = (0.4703 * t_sen) + (0.3809 * t_dps) + (0.1488 * t_scd);
+
+      // Estimate the required offset
+      float t_offset = p_val * (t_scd - t_sen);
+
+      // Return predicted room temperature
+      return t_base - t_offset + baseline;
+
+  # Room humidity prediction. Re-references each sensor's RH to the predicted
+  # room temperature (Magnus formula), then blends by manufacturing tolerance.
+  - platform: template
+    name: "Predicted Room Humidity"
+    id: predicted_room_humidity
+    disabled_by_default: true
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 10s
+    lambda: |-
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
+      float uptime = id(sys_uptime).state;
+      if (std::isnan(uptime) || uptime < 180.0) {
+        return NAN;
+      }
+
+      // Fetch the calculated Predicted Room Temperature
+      float t_room = id(predicted_room_temperature).state;
+
+      // Fetch Sensor data
+      float t_sen = id(sen55_temperature).state;
+      float rh_sen = id(sen55_humidity).state;
+      float t_scd = id(scd40_temperature).state;
+      float rh_scd = id(scd40_humidity).state;
+
+      // Ensure all sensors are actively broadcasting valid numbers
+      if (std::isnan(t_room) || std::isnan(t_sen) || std::isnan(rh_sen) || std::isnan(t_scd) || std::isnan(rh_scd)) {
+        return NAN;
+      }
+
+      // Calculate Saturation Vapor Pressures (Magnus Formula)
+      float mag_room = expf((17.62 * t_room) / (243.12 + t_room));
+      float mag_sen = expf((17.62 * t_sen) / (243.12 + t_sen));
+      float mag_scd = expf((17.62 * t_scd) / (243.12 + t_scd));
+
+      // Calculate Actual Room RH for each sensor
+      float true_rh_sen = rh_sen * (mag_sen / mag_room);
+      float true_rh_scd = rh_scd * (mag_scd / mag_room);
+
+      // Lowest statistical variance based on sensor manufacturing tolerances (64% SEN55, 36% SCD40)
+      float final_rh = (0.64 * true_rh_sen) + (0.36 * true_rh_scd);
+
+      // Clamp to valid range
+      if (final_rh > 100.0) {
+        final_rh = 100.0;
+      } else if (final_rh < 0.0) {
+        final_rh = 0.0;
+      }
+
+      return final_rh;
+
   - platform: scd4x
     id: scd40
     co2:
@@ -244,6 +406,22 @@ sensor:
               lambda: 'return id(air_quality_led_source).current_option() == "CO2";'
             then:
               - script.execute: update_air_quality_led
+    temperature:
+      name: "SCD40 Temperature"
+      id: scd40_temperature
+      disabled_by_default: true
+      filters:
+        - lambda: |-
+            float offset = id(scd40_temperature_offset).state;
+            return isnan(offset) ? x : x - offset;
+    humidity:
+      name: "SCD40 Humidity"
+      id: scd40_humidity
+      disabled_by_default: true
+      filters:
+        - lambda: |-
+            float offset = id(scd40_humidity_offset).state;
+            return isnan(offset) ? x : x - offset;
     automatic_self_calibration: true
     update_interval: 60s
     measurement_mode: "periodic"
@@ -260,7 +438,9 @@ sensor:
             float offset = id(dps310_pressure_offset).state;
             return isnan(offset) ? x : x + offset;
     temperature:
+      name: "DPS310 Temperature"
       id: dps310temperature
+      disabled_by_default: true
     update_interval: 30s
     i2c_id: bus_a
 
