@@ -143,6 +143,7 @@ number:
     mode: box
 
   # Physics-based room temperature/humidity prediction.
+  # Research and coefficient fitting by Ellude (Apollo Discord).
   # The Air-1 enclosure self-heats, so the on-board sensors read warmer/drier
   # than the room. These CONFIG numbers feed the "Predicted Room *" template
   # sensors below; defaults are the empirically fitted values and can be tuned
@@ -152,6 +153,7 @@ number:
     id: coefficient_p
     disabled_by_default: true
     restore_value: true
+    # Provisional value from Ellude; update once a better fit is available.
     initial_value: 0.5357
     min_value: 0.0000
     max_value: 1.0000
