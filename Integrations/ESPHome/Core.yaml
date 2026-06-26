@@ -150,6 +150,7 @@ number:
   - platform: template
     name: "Physics Multiplier P"          # thermal-gradient multiplier
     id: coefficient_p
+    disabled_by_default: true
     restore_value: true
     initial_value: 0.5357
     min_value: 0.0000
@@ -163,6 +164,7 @@ number:
   - platform: template
     name: "Baseline Offset"
     id: baseline_offset
+    disabled_by_default: true
     restore_value: true
     initial_value: 0.0
     min_value: -5.0
@@ -177,6 +179,7 @@ number:
   - platform: template
     name: SCD40 Temperature Offset
     id: scd40_temperature_offset
+    disabled_by_default: true
     restore_value: true
     initial_value: 0.0
     min_value: -70.0
@@ -191,6 +194,7 @@ number:
   - platform: template
     name: SCD40 Humidity Offset
     id: scd40_humidity_offset
+    disabled_by_default: true
     restore_value: true
     initial_value: 0.0
     min_value: -70.0
@@ -299,6 +303,7 @@ sensor:
   - platform: template
     name: "Predicted Room Temperature"
     id: predicted_room_temperature
+    disabled_by_default: true
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
@@ -336,6 +341,7 @@ sensor:
   - platform: template
     name: "Predicted Room Humidity"
     id: predicted_room_humidity
+    disabled_by_default: true
     unit_of_measurement: "%"
     device_class: humidity
     state_class: measurement
@@ -396,11 +402,13 @@ sensor:
     temperature:
       name: "SCD40 Temperature"
       id: scd40_temperature
+      disabled_by_default: true
       filters:
         - lambda: return x - id(scd40_temperature_offset).state;
     humidity:
       name: "SCD40 Humidity"
       id: scd40_humidity
+      disabled_by_default: true
       filters:
         - lambda: return x - id(scd40_humidity_offset).state;
     automatic_self_calibration: true
@@ -421,6 +429,7 @@ sensor:
     temperature:
       name: "DPS310 Temperature"
       id: dps310temperature
+      disabled_by_default: true
     update_interval: 30s
     i2c_id: bus_a
 
