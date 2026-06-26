@@ -312,8 +312,10 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
-      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions)
-      if (id(sys_uptime).state < 180.0) {
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
+      float uptime = id(sys_uptime).state;
+      if (std::isnan(uptime) || uptime < 180.0) {
         return NAN;
       }
 
@@ -324,8 +326,9 @@ sensor:
       float p_val = id(coefficient_p).state;
       float baseline = id(baseline_offset).state;
 
-      // Ensure all sensors are actively broadcasting valid numbers
-      if (std::isnan(t_sen) || std::isnan(t_dps) || std::isnan(t_scd)) {
+      // Ensure all sensors and coefficients are valid numbers before predicting
+      if (std::isnan(t_sen) || std::isnan(t_dps) || std::isnan(t_scd) ||
+          std::isnan(p_val) || std::isnan(baseline)) {
         return NAN;
       }
 
@@ -350,8 +353,10 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions)
-      if (id(sys_uptime).state < 180.0) {
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
+      float uptime = id(sys_uptime).state;
+      if (std::isnan(uptime) || uptime < 180.0) {
         return NAN;
       }
 
@@ -406,13 +411,17 @@ sensor:
       id: scd40_temperature
       disabled_by_default: true
       filters:
-        - lambda: return x - id(scd40_temperature_offset).state;
+        - lambda: |-
+            float offset = id(scd40_temperature_offset).state;
+            return isnan(offset) ? x : x - offset;
     humidity:
       name: "SCD40 Humidity"
       id: scd40_humidity
       disabled_by_default: true
       filters:
-        - lambda: return x - id(scd40_humidity_offset).state;
+        - lambda: |-
+            float offset = id(scd40_humidity_offset).state;
+            return isnan(offset) ? x : x - offset;
     automatic_self_calibration: true
     update_interval: 60s
     measurement_mode: "periodic"
