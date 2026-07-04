@@ -15,18 +15,20 @@ substitutions:
   beta_manifest_base: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta"
 
 esphome:
+  # List form so package merging concatenates with each variant's own on_boot
+  # entries (mapping form would be replaced by the variant's block instead).
   on_boot:
-    priority: -100
-    then:
-      # The Bluetooth Proxy select mirrors the firmware actually running, so a
-      # failed or abandoned switch snaps back to the truth on reboot.
-      - lambda: |-
-          if (std::string("${ble_firmware}") == "true") {
-            id(firmware_ble).publish_state("Enabled");
-          } else {
-            id(firmware_ble).publish_state("Disabled");
-          }
-      - script.execute: apply_ota_source
+    - priority: -100
+      then:
+        # The Bluetooth Proxy select mirrors the firmware actually running, so
+        # a failed or abandoned switch snaps back to the truth on reboot.
+        - lambda: |-
+            if (std::string("${ble_firmware}") == "true") {
+              id(firmware_ble).publish_state("Enabled");
+            } else {
+              id(firmware_ble).publish_state("Disabled");
+            }
+        - script.execute: apply_ota_source
 
 esp32:
   variant: esp32c3
@@ -462,6 +464,41 @@ button:
     id: clean_sen55
     on_press:
       - sen5x.start_fan_autoclean: sen55
+
+  - platform: template
+    name: "Firmware Update"
+    id: update_firmware
+    icon: mdi:cloud-download
+    entity_category: "config"
+    on_press:
+      - logger.log: "Applying firmware based on selected channel and type"
+      # OTA download needs the device awake for its whole duration.
+      - lambda: |-
+          id(deep_sleep_1).prevent_deep_sleep();
+      # Free heap for the TLS download on the BLE variant. Guarded so the
+      # non-BLE variant compiles the same YAML.
+      - lambda: |-
+          #ifdef USE_ESP32_BLE
+          if (esp32_ble::global_ble && esp32_ble::global_ble->is_active()) {
+            ESP_LOGI("firmware", "Disabling BLE for firmware update");
+            esp32_ble::global_ble->disable();
+          }
+          #endif
+      - delay: 3s
+      - script.execute: apply_ota_source
+      - script.wait: apply_ota_source
+      - delay: 2s
+      - update.perform:
+          id: update_http_request
+          force_update: true
+      # Only reached if the update did not start (e.g. manifest unreachable).
+      - lambda: |-
+          #ifdef USE_ESP32_BLE
+          if (esp32_ble::global_ble) {
+            ESP_LOGI("firmware", "Re-enabling BLE (no update performed)");
+            esp32_ble::global_ble->enable();
+          }
+          #endif
 
 text_sensor:
     # Convert VOC Index To Text: 
