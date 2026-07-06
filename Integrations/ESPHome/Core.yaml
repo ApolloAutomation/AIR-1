@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.6.25.1"
+  version: "26.7.1.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -634,6 +634,8 @@ script:
                 - light.turn_off:
                     id: rgb_light
 
+          - script.execute: restore_air_quality_led
+
   - id: statusCheck
     then:
       - if:
@@ -669,6 +671,7 @@ script:
                       blue: 0%
       - delay: 5s
       - light.turn_off: rgb_light
+      - script.execute: restore_air_quality_led
   - id: reportAllValues
     then:
       - component.update: sen55
@@ -753,3 +756,15 @@ script:
             case 5: call.set_rgb(0.5f, 0.0f, 0.0f); break;   // Maroon - Hazardous
           }
           call.perform();
+
+  # Runs after statusCheck/testScript finish so the air-quality color comes
+  # back right away instead of waiting for the next sensor on_value (up to 60s
+  # when CO2 is the source). statusCheck/testScript call this as their last
+  # action; the short delay lets the calling script finish first so
+  # update_air_quality_led's is_running() guard passes. mode: restart so a
+  # rapid second status flash doesn't stack pending restores.
+  - id: restore_air_quality_led
+    mode: restart
+    then:
+      - delay: 200ms
+      - script.execute: update_air_quality_led
