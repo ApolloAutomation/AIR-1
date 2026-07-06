@@ -37,8 +37,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - { yaml: Integrations/ESPHome/AIR-1_Factory.yaml, name: firmware-factory }
-          - { yaml: Integrations/ESPHome/AIR-1_BLE.yaml,     name: firmware-ble-beta }
+          # Beta serves OTA updates only, so it builds the end-user image
+          # (AIR-1.yaml), not the first-flash Factory image.
+          - { yaml: Integrations/ESPHome/AIR-1.yaml,     name: firmware-standard }
+          - { yaml: Integrations/ESPHome/AIR-1_BLE.yaml, name: firmware-ble-beta }
     uses: esphome/workflows/.github/workflows/build.yml@025a1e6255610c498ed590403b7e510b69e474df # 2026.4.1
     with:
       files: ${{ matrix.yaml }}
@@ -73,15 +75,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BASE="https://github.com/${{ github.repository }}/releases/download/beta"
-          declare -A DIRS=( [factory]=firmware-factory [ble]=firmware-ble-beta )
-          for v in factory ble; do
+          declare -A DIRS=( [standard]=firmware-standard [ble]=firmware-ble-beta )
+          for v in standard ble; do
             src="fw/${DIRS[$v]}"
             man=$(find "$src" -name manifest.json | head -1)
             if [ -z "$man" ]; then
               echo "::error::manifest.json not found for ${DIRS[$v]}"
               exit 1
             fi
-            # Factory and BLE share a device name, so their bin filenames match.
+            # Both variants share a device name, so their bin filenames match.
             # Release assets are a flat namespace: prefix per variant.
             find "$src" -name '*.bin' | while read -r bin; do
               mv "$bin" "$(dirname "$bin")/$v-$(basename "$bin")"

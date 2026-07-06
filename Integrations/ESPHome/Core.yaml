@@ -637,7 +637,7 @@ script:
           if (beta) {
             url = ble
               ? "${beta_manifest_base}/manifest-ble.json"
-              : "${beta_manifest_base}/manifest-factory.json";
+              : "${beta_manifest_base}/manifest-standard.json";
           } else {
             url = ble
               ? "${stable_manifest_base}/firmware-ble/manifest.json"
