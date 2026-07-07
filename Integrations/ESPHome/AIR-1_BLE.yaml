@@ -1,3 +1,6 @@
+substitutions:
+  ble_firmware: "true"
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1

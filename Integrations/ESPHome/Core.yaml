@@ -1,11 +1,23 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.1.1"
+  version: "26.7.8.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+  # Firmware variant identity: overridden to "true" by AIR-1_BLE.yaml so
+  # each image tracks its own OTA manifests.
+  ble_firmware: "false"
+  # Default update channel on first boot (no stored user choice yet, i.e. a
+  # fresh flash). The beta-channel builds override this to "Beta" (see
+  # Integrations/ESPHome/beta-channel/) so firmware obtained from the beta
+  # channel keeps tracking it instead of offering a stable "downgrade".
+  firmware_channel_default: "Stable"
+  # Manifest URL bases. Stable = GitHub Pages (main branch builds).
+  # Beta = rolling "beta" pre-release assets (beta branch builds).
+  stable_manifest_base: "https://apolloautomation.github.io/AIR-1"
+  beta_manifest_base: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw"
 
 esp32:
   variant: esp32c3
@@ -423,6 +435,52 @@ button:
     icon: mdi:power-cycle
     name: "ESP Reboot"
 
+  - platform: template
+    name: "Firmware Update"
+    id: update_firmware
+    icon: mdi:cloud-download
+    entity_category: "config"
+    on_press:
+      - logger.log: "Applying firmware based on selected channel and variant"
+      # OTA download needs the device awake for its whole duration.
+      - lambda: |-
+          id(deep_sleep_1).prevent_deep_sleep();
+      # Free heap for the TLS download on the BLE variant. Guarded so the
+      # non-BLE variant compiles the same YAML.
+      - lambda: |-
+          #ifdef USE_ESP32_BLE
+          if (esp32_ble::global_ble && esp32_ble::global_ble->is_active()) {
+            ESP_LOGI("firmware", "Disabling BLE for firmware update");
+            esp32_ble::global_ble->disable();
+          }
+          #endif
+      - delay: 3s
+      - script.execute: apply_ota_source
+      - script.wait: apply_ota_source
+      # The manifest fetch runs in its own task and YAML has no "fetch done"
+      # condition to wait on (update.is_available stays false for same-version
+      # variant switches), so give it a fixed window like R_PRO-1/CAST-1 do.
+      - delay: 5s
+      - update.perform:
+          id: update_http_request
+          force_update: true
+      # Only reached if the update did not start (e.g. manifest unreachable).
+      - lambda: |-
+          #ifdef USE_ESP32_BLE
+          if (esp32_ble::global_ble) {
+            ESP_LOGI("firmware", "Re-enabling BLE (no update performed)");
+            esp32_ble::global_ble->enable();
+          }
+          #endif
+      - if:
+          condition:
+            and:
+              - switch.is_off: prevent_sleep
+              - binary_sensor.is_off: ota_mode
+          then:
+            - lambda: |-
+                id(deep_sleep_1).allow_deep_sleep();
+
   - platform: factory_reset
     disabled_by_default: True
     name: "Factory Reset ESP"
@@ -524,6 +582,21 @@ switch:
 
 select:
   - platform: template
+    name: "Firmware Channel"
+    id: firmware_channel
+    icon: mdi:source-branch
+    entity_category: "config"
+    optimistic: true
+    restore_value: true
+    options:
+      - "Stable"
+      - "Beta"
+    initial_option: "${firmware_channel_default}"
+    on_value:
+      then:
+        - script.execute: apply_ota_source
+
+  - platform: template
     name: "Air Quality LED Source"
     id: air_quality_led_source
     icon: mdi:led-on
@@ -537,6 +610,28 @@ select:
         - script.execute: update_air_quality_led
 
 script:
+  - id: apply_ota_source
+    # Sets the OTA manifest URL from the Firmware Channel select
+    # (Stable/Beta) for the firmware variant this image was built as.
+    # Stable = GitHub Pages, Beta = rolling "beta" release assets.
+    then:
+      - lambda: |-
+          const bool ble  = std::string("${ble_firmware}") == "true";
+          const bool beta = id(firmware_channel).current_option() == "Beta";
+          std::string url;
+          if (beta) {
+            url = ble
+              ? "${beta_manifest_base}/manifest-ble.json"
+              : "${beta_manifest_base}/manifest-standard.json";
+          } else {
+            url = ble
+              ? "${stable_manifest_base}/firmware-ble/manifest.json"
+              : "${stable_manifest_base}/firmware/manifest.json";
+          }
+          ESP_LOGI("firmware", "OTA manifest set to: %s", url.c_str());
+          id(update_http_request).set_source_url(url);
+      - component.update: update_http_request
+
   - id: setCo2AutoCalibration
     mode: restart
     parameters:

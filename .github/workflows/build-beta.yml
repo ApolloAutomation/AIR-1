@@ -1,0 +1,105 @@
+name: Build and Publish Beta
+
+# Builds AIR-1 firmware from the beta branch and publishes it as assets on a
+# rolling "beta-fw" pre-release. The on-device "Firmware Channel" select points
+# OTA updates at these assets. Stable firmware is built/published separately
+# by build.yml (push to main -> GitHub Pages).
+
+on:
+  push:
+    branches: [beta]
+    paths:
+      - 'Integrations/ESPHome/**'
+  workflow_dispatch:
+
+# Least privilege: read-only by default; only publish-beta is elevated to write.
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Read version
+    runs-on: ubuntu-latest
+    outputs:
+      v: ${{ steps.read.outputs.v }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - id: read
+        run: |
+          v=$(awk '/substitutions:/ {f=1} f && /version:/ {print $2; exit}' \
+            Integrations/ESPHome/Core.yaml | tr -d '"')
+          echo "v=$v" >> "$GITHUB_OUTPUT"
+          echo "Beta version: $v"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: version
+    strategy:
+      matrix:
+        include:
+          # Beta serves OTA updates only, so it builds the end-user image
+          # (AIR-1.yaml), not the first-flash Factory image.
+          - { yaml: Integrations/ESPHome/beta-channel/AIR-1.yaml,     name: firmware-standard }
+          - { yaml: Integrations/ESPHome/beta-channel/AIR-1_BLE.yaml, name: firmware-ble-beta }
+    uses: esphome/workflows/.github/workflows/build.yml@025a1e6255610c498ed590403b7e510b69e474df # 2026.4.1
+    with:
+      files: ${{ matrix.yaml }}
+      esphome-version: stable
+      combined-name: ${{ matrix.name }}
+      release-version: ${{ needs.version.outputs.v }}
+
+  publish-beta:
+    name: Publish beta release assets
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download firmware artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: fw
+          pattern: firmware*
+
+      - name: Ensure rolling 'beta-fw' pre-release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view beta-fw -R "${{ github.repository }}" >/dev/null 2>&1 \
+            || gh release create beta-fw -R "${{ github.repository }}" \
+                 --prerelease --title "Beta (rolling)" \
+                 --notes "Latest AIR-1 beta firmware. Auto-updated on every push to the beta branch."
+
+      - name: Rewrite manifests to absolute URLs and upload assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BASE="https://github.com/${{ github.repository }}/releases/download/beta-fw"
+          declare -A DIRS=( [standard]=firmware-standard [ble]=firmware-ble-beta )
+          for v in standard ble; do
+            src="fw/${DIRS[$v]}"
+            man=$(find "$src" -name manifest.json | head -1)
+            if [ -z "$man" ]; then
+              echo "::error::manifest.json not found for ${DIRS[$v]}"
+              exit 1
+            fi
+            # Both variants share a device name, so their bin filenames match.
+            # Release assets are a flat namespace: prefix per variant.
+            find "$src" -name '*.bin' | while read -r bin; do
+              mv "$bin" "$(dirname "$bin")/$v-$(basename "$bin")"
+            done
+            echo "Rewriting $man"
+            # Make ota.path and parts[].path absolute release-asset URLs so the
+            # device never has to resolve a relative path against a redirect.
+            jq --arg base "$BASE" --arg pfx "$v-" '
+              .builds[0].ota.path = ($base + "/" + $pfx + (.builds[0].ota.path | sub(".*/"; "")))
+              | .builds[0].parts |= map(.path = ($base + "/" + $pfx + (.path | sub(".*/"; ""))))
+            ' "$man" > "manifest-$v.json"
+            cat "manifest-$v.json"
+            gh release upload beta-fw "manifest-$v.json" -R "${{ github.repository }}" --clobber
+            find "$src" -name '*.bin' -print -exec \
+              gh release upload beta-fw {} -R "${{ github.repository }}" --clobber \;
+          done
+          echo "Beta assets published."
