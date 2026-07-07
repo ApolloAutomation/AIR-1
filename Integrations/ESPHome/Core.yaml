@@ -487,7 +487,10 @@ button:
       - delay: 3s
       - script.execute: apply_ota_source
       - script.wait: apply_ota_source
-      - delay: 2s
+      # The manifest fetch runs in its own task and YAML has no "fetch done"
+      # condition to wait on (update.is_available stays false for same-version
+      # variant switches), so give it a fixed window like R_PRO-1/CAST-1 do.
+      - delay: 5s
       - update.perform:
           id: update_http_request
           force_update: true
@@ -499,6 +502,14 @@ button:
             esp32_ble::global_ble->enable();
           }
           #endif
+      - if:
+          condition:
+            and:
+              - switch.is_off: prevent_sleep
+              - binary_sensor.is_off: ota_mode
+          then:
+            - lambda: |-
+                id(deep_sleep_1).allow_deep_sleep();
 
 text_sensor:
     # Convert VOC Index To Text: 

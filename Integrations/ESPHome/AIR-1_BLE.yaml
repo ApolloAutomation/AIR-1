@@ -15,17 +15,18 @@ esphome:
   on_boot:
     - priority: 500
       then:
+        - text_sensor.template.publish:
+            id: apollo_firmware_version
+            state: "${version}"
         - lambda: |-
-            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
-        - if:
-            condition:
-              or:
-                - binary_sensor.is_on: ota_mode
-                - switch.is_on: prevent_sleep
-            then:
-               - lambda: |-
-                  ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
-                  id(deep_sleep_1).prevent_deep_sleep();
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 1000);
+        # A Bluetooth proxy is useless asleep, so this image keeps the device
+        # awake: forcing the Prevent Sleep switch on also gates the
+        # api on_client_connected deep_sleep.enter path in Core.yaml.
+        - lambda: |-
+            ESP_LOGI("Apollo", "Bluetooth proxy firmware: forcing Prevent Sleep on");
+            id(prevent_sleep).turn_on();
+            id(deep_sleep_1).prevent_deep_sleep();
   on_shutdown:
     - light.turn_off: rgb_light
 
