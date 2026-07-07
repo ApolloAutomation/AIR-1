@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.1.1"
+  version: "26.7.7.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -631,8 +631,8 @@ script:
     # Stable = GitHub Pages, Beta = rolling "beta" release assets.
     then:
       - lambda: |-
-          const bool ble  = id(firmware_ble).state == "Enabled";
-          const bool beta = id(firmware_channel).state == "Beta";
+          const bool ble  = id(firmware_ble).current_option() == "Enabled";
+          const bool beta = id(firmware_channel).current_option() == "Beta";
           std::string url;
           if (beta) {
             url = ble
