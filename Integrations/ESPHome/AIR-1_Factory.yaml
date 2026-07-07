@@ -32,12 +32,9 @@ esphome:
   on_shutdown:
     - light.turn_off: rgb_light
 
-
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_Factory.yaml
   import_full_config: false
-
-improv_serial:
 
 logger:
 
@@ -57,6 +54,8 @@ update:
     id: update_http_request
     name: Firmware Update
     source: https://apolloautomation.github.io/AIR-1/firmware/manifest.json
+
+improv_serial:
 
 esp32_improv:
   authorizer: none

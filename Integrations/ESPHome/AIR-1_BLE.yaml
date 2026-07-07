@@ -25,16 +25,16 @@ esphome:
   on_shutdown:
     - light.turn_off: rgb_light
 
-logger:
-
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
   import_full_config: false
 
+logger:
+
 ota:
   - platform: esphome
-    password: ${ota_password}
     id: ota_esphome
+    password: ${ota_password}
   - platform: http_request
     id: ota_managed
 
@@ -51,6 +51,7 @@ update:
 
 bluetooth_proxy:
   active: true
+
 esp32_ble_tracker:
   scan_parameters:
     active: false
