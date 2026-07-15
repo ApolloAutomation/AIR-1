@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.1.1"
+  version: "26.7.15.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -68,6 +68,10 @@ globals:
     restore_value: no
     initial_value: "0"
   - id: dps310Passed
+    restore_value: no
+    type: bool
+    initial_value: "false"
+  - id: noxPassed
     restore_value: no
     type: bool
     initial_value: "false"
@@ -575,6 +579,7 @@ script:
         then:
           - lambda: "id(runTest) = false;"
           - lambda: "id(testCycleCount) = 0;"
+          - lambda: "id(noxPassed) = false;"
           - while:
               condition:
                 - lambda: "return id(testCycleCount) < 5;"
@@ -597,11 +602,33 @@ script:
                 - lambda: "id(runTest) = false;"
                 - delay: 1s
                 - lambda: "id(testCycleCount) += 1;"
-          
+
+          # SEN54 detection: when the SEN5x chip reports itself as a SEN54 the
+          # component nulls the NOX sensor, so its state stays NaN forever. A
+          # healthy SEN55 publishes a NOX index within a couple of update cycles,
+          # so wait up to 30s for a value before deciding.
+          - wait_until:
+              condition:
+                - lambda: "return !isnan(id(sen55_nox).state);"
+              timeout: 30s
+          - if:
+              condition:
+                - lambda: "return !isnan(id(sen55_nox).state);"
+              then:
+                - lambda: "id(noxPassed) = true;"
+                - logger.log:
+                    format: "TEST: NOX OK - SEN55 confirmed (nox index %.1f)"
+                    args: ["id(sen55_nox).state"]
+                    level: INFO
+              else:
+                - logger.log:
+                    format: "TEST FAIL: NOX unavailable - SEN55 is reporting as SEN54"
+                    level: ERROR
+
           #Check If Test Passed To Trigger Lights
           - if:
               condition:
-                - lambda: "return id(dps310Passed);"
+                - lambda: "return id(dps310Passed) && id(noxPassed);"
               then:
                 - lambda: "id(runTest) = false;"
                 - light.turn_on:
