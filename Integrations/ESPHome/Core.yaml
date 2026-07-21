@@ -18,7 +18,7 @@ esp32:
 # even though the NOx element is present and functional; model: sen55 below
 # keeps NOx enabled on those units.
 external_components:
-  - source: github://bharvey88/esphome@sen5x-model-override
+  - source: github://ApolloAutomation/esphome-components@main
     components: [sen5x, sensirion_common]
     refresh: 1d
 
