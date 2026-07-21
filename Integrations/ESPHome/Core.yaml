@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.1.1"
+  version: "26.7.21.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -12,6 +12,15 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
+
+# Temporary: sen5x with a model override, pending the same option landing in
+# upstream esphome. Some AIR-1 units report SEN54 on the product name register
+# even though the NOx element is present and functional; model: sen55 below
+# keeps NOx enabled on those units.
+external_components:
+  - source: github://bharvey88/esphome@sen5x-model-override
+    components: [sen5x, sensirion_common]
+    refresh: 1d
 
 api:
   on_client_connected:
@@ -316,6 +325,7 @@ sensor:
       id: sen55_nox
     acceleration_mode: low
     store_baseline: true
+    model: sen55
     address: 0x69
     update_interval: 10s
 
