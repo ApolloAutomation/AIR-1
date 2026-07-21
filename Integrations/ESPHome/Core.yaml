@@ -374,10 +374,12 @@ sensor:
         return NAN;
       }
 
-      // Calculate Saturation Vapor Pressures (Magnus Formula)
-      float mag_room = expf((17.62 * t_room) / (243.12 + t_room));
-      float mag_sen = expf((17.62 * t_sen) / (243.12 + t_sen));
-      float mag_scd = expf((17.62 * t_scd) / (243.12 + t_scd));
+      // Calculate Saturation Vapor Pressures (Magnus formula, coefficients
+      // from Alduchov & Eskridge 1996). Used only as ratios, so the 6.112
+      // prefactor cancels and is omitted.
+      float mag_room = expf((17.625 * t_room) / (243.04 + t_room));
+      float mag_sen = expf((17.625 * t_sen) / (243.04 + t_sen));
+      float mag_scd = expf((17.625 * t_scd) / (243.04 + t_scd));
 
       // Calculate Actual Room RH for each sensor
       float true_rh_sen = rh_sen * (mag_sen / mag_room);
