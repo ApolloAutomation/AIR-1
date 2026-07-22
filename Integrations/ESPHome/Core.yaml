@@ -13,15 +13,6 @@ esp32:
   framework:
     type: esp-idf
 
-# Temporary: sen5x with a model override, pending the same option landing in
-# upstream esphome. Some AIR-1 units report SEN54 on the product name register
-# even though the NOx element is present and functional; model: sen55 below
-# keeps NOx enabled on those units.
-external_components:
-  - source: github://ApolloAutomation/esphome-components@main
-    components: [sen5x, sensirion_common]
-    refresh: 1d
-
 api:
   on_client_connected:
     - delay: 90s
@@ -325,6 +316,9 @@ sensor:
       id: sen55_nox
     acceleration_mode: low
     store_baseline: true
+    # Some units misreport SEN54 on the product name register even though the
+    # NOx element is present; forcing the model keeps NOx enabled. Needs the
+    # model option from esphome 2026.7.2.
     model: sen55
     address: 0x69
     update_interval: 10s
