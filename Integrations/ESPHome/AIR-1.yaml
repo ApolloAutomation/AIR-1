@@ -41,9 +41,6 @@ ota:
   - platform: http_request
     id: ota_managed
 
-http_request:
-  verify_ssl: true
-
 safe_mode:
 
 update:
