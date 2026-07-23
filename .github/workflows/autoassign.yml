@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   auto-assign:
-    uses: ApolloAutomation/Workflows/.github/workflows/autoassign.yml@main
+    uses: ApolloAutomation/Workflows/.github/workflows/autoassign.yml@430d90dc695c6f7d1075c4e4a0df4b13a6496252 # main 2026-07-23
     with:
       assignees: bharvey88
       num-of-assignees: 1
