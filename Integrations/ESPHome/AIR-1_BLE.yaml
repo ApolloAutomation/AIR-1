@@ -1,3 +1,8 @@
+substitutions:
+  # Legacy BLE devices keep updating from the firmware-ble manifest.
+  ota_stable_manifest: "https://apolloautomation.github.io/AIR-1/firmware-ble/manifest.json"
+  ota_beta_manifest: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw/manifest-ble.json"
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
@@ -38,9 +43,6 @@ ota:
   - platform: http_request
     id: ota_managed
 
-http_request:
-  verify_ssl: true
-
 safe_mode:
 
 update:
@@ -48,13 +50,6 @@ update:
     id: update_http_request
     name: Firmware Update
     source: https://apolloautomation.github.io/AIR-1/firmware-ble/manifest.json
-
-bluetooth_proxy:
-  active: true
-
-esp32_ble_tracker:
-  scan_parameters:
-    active: false
 
 wifi:
   on_connect:
