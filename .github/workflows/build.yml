@@ -24,9 +24,13 @@ jobs:
       pull-requests: write
     with:
       device-name: air-1
+      # AIR-1.yaml is the end-user image served at firmware/ (OTA updates). The Factory image (improv +
+      # factory test) is only used for first flashes via the web installer.
       yaml-files: |
+        Integrations/ESPHome/AIR-1.yaml
         Integrations/ESPHome/AIR-1_Factory.yaml
-      firmware-names: "1_Factory:firmware"
+        Integrations/ESPHome/AIR-1_BLE.yaml
+      firmware-names: "1:firmware,1_Factory:firmware-factory,1_BLE:firmware-ble"
       core-yaml-path: Integrations/ESPHome/Core.yaml
       esphome-version: stable
       # Bypass check if manually triggered with bypass option

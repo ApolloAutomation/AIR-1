@@ -1,0 +1,20 @@
+name: Label Check
+
+# pull_request_target (not pull_request) so the job gets a write token on
+# fork-submitted PRs too; plain pull_request runs from forks are read-only
+# and cannot add labels. Safe because the called workflow only reads the PR
+# body and never checks out or executes PR code. The "edited" type re-runs
+# the check when the template checkboxes are changed.
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  label-check:
+    name: Label Check
+    uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@main

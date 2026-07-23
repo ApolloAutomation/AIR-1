@@ -1,5 +1,4 @@
 name: Auto Assign
-
 # pull_request_target (not pull_request) so auto-assign works on
 # fork-submitted PRs; fork pull_request runs only get a read-only token.
 # Safe because this workflow never checks out or executes PR code.
