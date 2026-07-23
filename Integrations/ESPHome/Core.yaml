@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.23.2"
+  version: "26.7.23.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
