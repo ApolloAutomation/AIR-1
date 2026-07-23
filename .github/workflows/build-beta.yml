@@ -103,3 +103,14 @@ jobs:
               gh release upload beta-fw {} -R "${{ github.repository }}" --clobber \;
           done
           echo "Beta assets published."
+
+      - name: Point beta-fw tag at the built commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # gh release create tags default-branch HEAD, and uploads never move
+          # the tag, so without this the release's source commit drifts away
+          # from the assets actually published.
+          gh api -X PATCH "repos/${{ github.repository }}/git/refs/tags/beta-fw" \
+            -f sha="${{ github.sha }}" -F force=true
+          echo "beta-fw -> ${{ github.sha }}"
