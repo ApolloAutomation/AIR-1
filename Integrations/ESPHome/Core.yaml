@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.7.14.1"
+  version: "26.7.23.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -369,6 +369,10 @@ sensor:
       id: sen55_nox
     acceleration_mode: low
     store_baseline: true
+    # Some units misreport SEN54 on the product name register even though the
+    # NOx element is present; forcing the model keeps NOx enabled. Needs the
+    # model option from esphome 2026.7.2.
+    model: sen55
     address: 0x69
     update_interval: 10s
 
