@@ -10,7 +10,7 @@ permissions:
 jobs:
   build:
     name: Weekly Build
-    uses: ApolloAutomation/Workflows/.github/workflows/esphome-ci.yml@main
+    uses: ApolloAutomation/Workflows/.github/workflows/esphome-ci.yml@430d90dc695c6f7d1075c4e4a0df4b13a6496252 # main 2026-07-23
     with:
       yaml-files: |
         Integrations/ESPHome/AIR-1.yaml

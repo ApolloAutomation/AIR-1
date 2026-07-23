@@ -1,3 +1,8 @@
+substitutions:
+  # Legacy BLE devices keep updating from the firmware-ble manifest.
+  ota_stable_manifest: "https://apolloautomation.github.io/AIR-1/firmware-ble/manifest.json"
+  ota_beta_manifest: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw/manifest-ble.json"
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
@@ -7,45 +12,51 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2025.2.0
+  min_version: 2026.7.2
   on_boot:
-    priority: 500
-    then:
-      - text_sensor.template.publish:
-          id: apollo_firmware_version
-          state: "${version}"
-      - lambda: |-
-          id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
-      - if:
-          condition:
-            or:
-              - binary_sensor.is_on: ota_mode
-              - switch.is_on: prevent_sleep
-          then:
-             - lambda: |- 
-                ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
-                id(deep_sleep_1).prevent_deep_sleep(); 
+    - priority: 500
+      then:
+        - text_sensor.template.publish:
+            id: apollo_firmware_version
+            state: "${version}"
+        - lambda: |-
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 1000);
+        - if:
+            condition:
+              or:
+                - binary_sensor.is_on: ota_mode
+                - switch.is_on: prevent_sleep
+            then:
+              - lambda: |-
+                  ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA On Boot");
+                  id(deep_sleep_1).prevent_deep_sleep();
   on_shutdown:
     - light.turn_off: rgb_light
-
-logger:
 
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_BLE.yaml
   import_full_config: false
 
+logger:
+
 ota:
   - platform: esphome
-    password: "apolloautomation"
     id: ota_esphome
+    password: ${ota_password}
+  - platform: http_request
+    id: ota_managed
 
-bluetooth_proxy:
-  active: true
-esp32_ble_tracker:
-  scan_parameters:
-    active: false
+safe_mode:
+
+update:
+  - platform: http_request
+    id: update_http_request
+    name: Firmware Update
+    source: https://apolloautomation.github.io/AIR-1/firmware-ble/manifest.json
 
 wifi:
+  on_connect:
+    - component.update: update_http_request
   ap:
     ssid: "Apollo AIR1 Hotspot"
 

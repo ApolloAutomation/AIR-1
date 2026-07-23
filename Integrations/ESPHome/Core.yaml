@@ -1,7 +1,45 @@
 substitutions:
   name: apollo-air-1
-  version: "26.6.10.1"
+  version: "26.7.23.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
+  # Default OTA password. Override in your device YAML by re-declaring
+  # `substitutions: { ota_password: !secret <name>_ota_password }` so each
+  # device on your network uses a unique secret instead of the shared default.
+  ota_password: "apolloautomation"
+  # Default update channel on first boot (no stored user choice yet, i.e. a
+  # fresh flash). The beta-channel builds override this to "Beta" (see
+  # Integrations/ESPHome/beta-channel/) so firmware obtained from the beta
+  # channel keeps tracking it instead of offering a stable "downgrade".
+  firmware_channel_default: "Stable"
+  # Manifest URL bases. Stable = GitHub Pages (main branch builds).
+  # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
+  stable_manifest_base: "https://apolloautomation.github.io/AIR-1"
+  beta_manifest_base: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw"
+  # Per-variant OTA manifest URLs. Core defaults to the unified (standard)
+  # image; AIR-1_BLE.yaml overrides these so legacy BLE devices stay on the
+  # firmware-ble manifest.
+  ota_stable_manifest: "${stable_manifest_base}/firmware/manifest.json"
+  ota_beta_manifest: "${beta_manifest_base}/manifest-standard.json"
+
+esphome:
+  # List form so package merging concatenates with each variant's own on_boot
+  # entries (mapping form would be replaced by the variant's block instead).
+  on_boot:
+    - priority: -100
+      then:
+        - script.execute: apply_ota_source
+    # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
+    # scanning matches the persisted switch (proxy stays off by default).
+    - priority: -300
+      then:
+        - if:
+            condition:
+              switch.is_on: bluetooth_proxy_switch
+            then:
+              - esp32_ble_tracker.start_scan:
+                  continuous: true
+            else:
+              - esp32_ble_tracker.stop_scan:
 
 esp32:
   variant: esp32c3
@@ -9,7 +47,26 @@ esp32:
   framework:
     type: esp-idf
 
+esp32_ble_tracker:
+  id: ble_tracker
+  scan_parameters:
+    continuous: true
+
+bluetooth_proxy:
+
+http_request:
+  verify_ssl: true
+  # GitHub release-asset downloads answer with a redirect carrying a
+  # ~3.6 KB Content-Security-Policy header; each header line must fit
+  # this buffer or the request fails with "HTTP_CLIENT: Out of buffer".
+  buffer_size_rx: 5120
+  # The redirect target is a signed URL with a ~850-char query string; the
+  # follow-up request line must fit the TX buffer or esp_http_client_open
+  # fails with "Out of buffer" before sending anything.
+  buffer_size_tx: 2048
+
 api:
+  encryption:
   on_client_connected:
     - delay: 90s
     - if:
@@ -80,6 +137,23 @@ deep_sleep:
   run_duration: 2min
 
 number:
+  - platform: template
+    name: "Air Quality LED Brightness"
+    id: air_quality_led_brightness
+    icon: mdi:brightness-6
+    optimistic: true
+    restore_value: true
+    entity_category: "config"
+    unit_of_measurement: "%"
+    min_value: 5
+    max_value: 100
+    step: 1
+    initial_value: 100
+    mode: slider
+    on_value:
+      then:
+        - script.execute: update_air_quality_led
+
   - platform: template
     name: SEN55 Temperature Offset
     id: sen55_temperature_offset
@@ -217,7 +291,13 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
-    automatic_self_calibration: false
+      on_value:
+        - if:
+            condition:
+              lambda: 'return id(air_quality_led_source).current_option() == "CO2";'
+            then:
+              - script.execute: update_air_quality_led
+    automatic_self_calibration: true
     update_interval: 60s
     measurement_mode: "periodic"
     i2c_id: bus_a
@@ -270,7 +350,12 @@ sensor:
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
-      
+      on_value:
+        - if:
+            condition:
+              lambda: 'return id(air_quality_led_source).current_option() == "VOC Index";'
+            then:
+              - script.execute: update_air_quality_led
       algorithm_tuning:
         #https://sensirion.com/media/documents/25AB572C/62B463AA/Sensirion_Engineering_Guidelines_SEN5x.pdf
         index_offset: 100
@@ -284,6 +369,10 @@ sensor:
       id: sen55_nox
     acceleration_mode: low
     store_baseline: true
+    # Some units misreport SEN54 on the product name register even though the
+    # NOx element is present; forcing the model keeps NOx enabled. Needs the
+    # model option from esphome 2026.7.2.
+    model: sen55
     address: 0x69
     update_interval: 10s
 
@@ -334,6 +423,12 @@ sensor:
     pm_10_0: pm_10_0
     calculation_type: AQI
     device_class: aqi
+    on_value:
+      - if:
+          condition:
+            lambda: 'return id(air_quality_led_source).current_option() == "NowCast AQI";'
+          then:
+            - script.execute: update_air_quality_led
 
   - platform: mics_4514
     id: mics4514
@@ -404,6 +499,34 @@ button:
     on_press:
       - sen5x.start_fan_autoclean: sen55
 
+  - platform: template
+    name: "Firmware Update"
+    id: update_firmware
+    icon: mdi:cloud-download
+    entity_category: "config"
+    on_press:
+      - logger.log: "Applying firmware update for the selected channel"
+      # OTA download needs the device awake for its whole duration.
+      - lambda: |-
+          id(deep_sleep_1).prevent_deep_sleep();
+      - delay: 3s
+      - script.execute: apply_ota_source
+      - script.wait: apply_ota_source
+      # The manifest fetch runs in its own task; give it a fixed window to land
+      # (update.is_available stays false for same-version switches).
+      - delay: 5s
+      - lambda: id(update_http_request).perform(true);
+      # Only reached if the update did not start (e.g. manifest unreachable).
+      # Re-arm deep sleep unless something else is holding the device awake.
+      - if:
+          condition:
+            and:
+              - switch.is_off: prevent_sleep
+              - binary_sensor.is_off: ota_mode
+          then:
+            - lambda: |-
+                id(deep_sleep_1).allow_deep_sleep();
+
 text_sensor:
     # Convert VOC Index To Text: 
     # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
@@ -455,7 +578,7 @@ switch:
     entity_category: "config"
     on_turn_on:
       then:
-        - lambda: |- 
+        - lambda: |-
             id(deep_sleep_1).prevent_deep_sleep();
     on_turn_off:
       then:
@@ -463,11 +586,113 @@ switch:
             condition:
               binary_sensor.is_off: ota_mode
             then:
-              - lambda: |- 
+              - lambda: |-
                   id(deep_sleep_1).allow_deep_sleep();
 
+  - platform: template
+    name: "CO2 Auto Calibration"
+    id: co2_auto_calibration
+    icon: mdi:molecule-co2
+    restore_mode: RESTORE_DEFAULT_ON
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      then:
+        - script.execute:
+            id: setCo2AutoCalibration
+            enable: true
+    on_turn_off:
+      then:
+        - script.execute:
+            id: setCo2AutoCalibration
+            enable: false
+
+  - platform: template
+    name: "Bluetooth Proxy"
+    id: bluetooth_proxy_switch
+    icon: mdi:bluetooth
+    entity_category: "config"
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    on_turn_on:
+      - esp32_ble_tracker.start_scan:
+          continuous: true
+    on_turn_off:
+      - esp32_ble_tracker.stop_scan:
+
+select:
+  - platform: template
+    name: "Air Quality LED Source"
+    id: air_quality_led_source
+    icon: mdi:led-on
+    optimistic: true
+    restore_value: true
+    entity_category: "config"
+    options: ["Off", "NowCast AQI", "CO2", "VOC Index"]
+    initial_option: "Off"
+    on_value:
+      then:
+        - script.execute: update_air_quality_led
+
+  - platform: template
+    name: "Firmware Channel"
+    id: firmware_channel
+    icon: mdi:source-branch
+    entity_category: "config"
+    optimistic: true
+    restore_value: true
+    options:
+      - "Stable"
+      - "Beta"
+    initial_option: "${firmware_channel_default}"
+    on_value:
+      then:
+        - script.execute: apply_ota_source
+
 script:
-  - id: testScript      
+  - id: apply_ota_source
+    # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
+    # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
+    # AIR-1_BLE builds keep their firmware-ble manifest.
+    then:
+      - lambda: |-
+          const bool beta = id(firmware_channel).current_option() == "Beta";
+          std::string url = beta ? "${ota_beta_manifest}" : "${ota_stable_manifest}";
+          ESP_LOGI("firmware", "OTA manifest set to: %s", url.c_str());
+          id(update_http_request).set_source_url(url);
+      - component.update: update_http_request
+
+  - id: setCo2AutoCalibration
+    mode: restart
+    parameters:
+      enable: bool
+    then:
+      #The SCD40 forgets this setting on power loss and the scd4x component
+      #re-applies the YAML default during setup (~1.5s after boot), so when this
+      #runs at boot (via the restored switch state) wait for setup to finish first.
+      - if:
+          condition:
+            lambda: "return millis() < 20000;"
+          then:
+            - delay: 20s
+      #The sensor only accepts the ASC command while idle, so stop periodic
+      #measurement first, then restart it. Same sequence the component uses
+      #for forced calibration.
+      - lambda: |-
+          id(scd40).write_command((uint16_t) 0x3F86); //stop periodic measurement
+      - delay: 500ms
+      - lambda: |-
+          id(scd40).set_automatic_self_calibration(enable);
+          if (!id(scd40).write_command((uint16_t) 0x2416, (uint16_t) (enable ? 1 : 0))) {
+            ESP_LOGE("Apollo", "Failed to set CO2 auto calibration");
+          } else {
+            ESP_LOGI("Apollo", "CO2 auto calibration %s", enable ? "enabled" : "disabled");
+          }
+      - delay: 10ms
+      - lambda: |-
+          id(scd40).write_command((uint16_t) 0x21B1); //start periodic measurement
+
+  - id: testScript
     then:
       if: 
         condition:
@@ -534,6 +759,8 @@ script:
                 - light.turn_off:
                     id: rgb_light
 
+          - script.execute: restore_air_quality_led
+
   - id: statusCheck
     then:
       - if:
@@ -569,6 +796,7 @@ script:
                       blue: 0%
       - delay: 5s
       - light.turn_off: rgb_light
+      - script.execute: restore_air_quality_led
   - id: reportAllValues
     then:
       - component.update: sen55
@@ -583,3 +811,85 @@ script:
       - component.update: pm2_5_to_4
       - component.update: pm4_to_10
       - component.update: voc_quality
+
+  - id: update_air_quality_led
+    then:
+      - lambda: |-
+          // The select's restore_value publishes during component setup and
+          // fires on_value before rgb_light (esp32_rmt_led_strip) is
+          // initialized; touching the light then faults in schedule_show().
+          // Don't write the LED in the first few seconds after boot. The
+          // sensor/select/brightness triggers all run normally after that.
+          if (millis() < 5000) {
+            return;
+          }
+
+          // While statusCheck or testScript owns the LED (button-press status
+          // flash, boot self-test), leave rgb_light alone so this updater
+          // doesn't override their colors mid-display.
+          if (id(statusCheck).is_running() || id(testScript).is_running()) {
+            return;
+          }
+
+          const std::string src = id(air_quality_led_source).current_option();
+
+          if (src == "Off") {
+            id(rgb_light).turn_off().perform();
+            return;
+          }
+
+          // Map the selected metric to a severity band: 0=Good … 5=Hazardous.
+          // Each metric has its own scale; bands share one color table below.
+          int band = -1;
+          if (src == "NowCast AQI") {                // US EPA AQI
+            const float x = id(nowcast_aqi).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x <= 50)   band = 0;
+            else if (x <= 100)  band = 1;
+            else if (x <= 150)  band = 2;
+            else if (x <= 200)  band = 3;
+            else if (x <= 300)  band = 4;
+            else                band = 5;
+          } else if (src == "CO2") {                 // ppm, SCD40
+            const float x = id(co2).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x <= 800)  band = 0;
+            else if (x <= 1000) band = 1;
+            else if (x <= 1500) band = 2;
+            else if (x <= 2000) band = 3;
+            else if (x <= 2500) band = 4;
+            else                band = 5;
+          } else if (src == "VOC Index") {           // Sensirion VOC index (matches "VOC Quality" text sensor)
+            const float x = id(sen55_voc).state;
+            if (isnan(x)) { id(rgb_light).turn_off().perform(); return; }  // no sample yet (e.g. missing module); clear stale color
+            if      (x < 80)    band = 0;
+            else if (x < 150)   band = 1;
+            else if (x < 250)   band = 2;
+            else if (x < 400)   band = 3;
+            else                band = 4;            // VOC scale tops out at "extremely abnormal"
+          }
+          if (band < 0) return;
+
+          auto call = id(rgb_light).turn_on();
+          call.set_brightness(id(air_quality_led_brightness).state / 100.0f);
+          switch (band) {
+            case 0: call.set_rgb(0.0f, 1.0f, 0.0f); break;   // Green  - Good
+            case 1: call.set_rgb(1.0f, 1.0f, 0.0f); break;   // Yellow - Moderate
+            case 2: call.set_rgb(1.0f, 0.5f, 0.0f); break;   // Orange - Unhealthy (Sensitive)
+            case 3: call.set_rgb(1.0f, 0.0f, 0.0f); break;   // Red    - Unhealthy
+            case 4: call.set_rgb(0.6f, 0.0f, 1.0f); break;   // Purple - Very Unhealthy
+            case 5: call.set_rgb(0.5f, 0.0f, 0.0f); break;   // Maroon - Hazardous
+          }
+          call.perform();
+
+  # Runs after statusCheck/testScript finish so the air-quality color comes
+  # back right away instead of waiting for the next sensor on_value (up to 60s
+  # when CO2 is the source). statusCheck/testScript call this as their last
+  # action; the short delay lets the calling script finish first so
+  # update_air_quality_led's is_running() guard passes. mode: restart so a
+  # rapid second status flash doesn't stack pending restores.
+  - id: restore_air_quality_led
+    mode: restart
+    then:
+      - delay: 200ms
+      - script.execute: update_air_quality_led
