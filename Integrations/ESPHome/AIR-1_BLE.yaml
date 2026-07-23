@@ -20,7 +20,7 @@ esphome:
             id: apollo_firmware_version
             state: "${version}"
         - lambda: |-
-            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 60 * 1000);
+            id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 1000);
         - if:
             condition:
               or:
