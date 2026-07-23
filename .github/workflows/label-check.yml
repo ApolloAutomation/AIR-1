@@ -17,4 +17,4 @@ permissions:
 jobs:
   label-check:
     name: Label Check
-    uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@main
+    uses: ApolloAutomation/Workflows/.github/workflows/label-check.yml@430d90dc695c6f7d1075c4e4a0df4b13a6496252 # main 2026-07-23

@@ -16,7 +16,7 @@ jobs:
   auto-assign:
     # Skip auto-assign for pull requests from forks due to GITHUB_TOKEN permission restrictions
     if: github.event_name == 'issues' || github.event.pull_request.head.repo.full_name == github.repository
-    uses: ApolloAutomation/Workflows/.github/workflows/autoassign.yml@main
+    uses: ApolloAutomation/Workflows/.github/workflows/autoassign.yml@430d90dc695c6f7d1075c4e4a0df4b13a6496252 # main 2026-07-23
     with:
       assignees: bharvey88
       num-of-assignees: 1
