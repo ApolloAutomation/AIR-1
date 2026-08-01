@@ -23,7 +23,7 @@ jobs:
     outputs:
       v: ${{ steps.read.outputs.v }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - id: read
@@ -43,7 +43,7 @@ jobs:
           # (AIR-1.yaml), not the first-flash Factory image.
           - { yaml: Integrations/ESPHome/beta-channel/AIR-1.yaml,     name: firmware-standard }
           - { yaml: Integrations/ESPHome/beta-channel/AIR-1_BLE.yaml, name: firmware-ble-beta }
-    uses: esphome/workflows/.github/workflows/build.yml@025a1e6255610c498ed590403b7e510b69e474df # 2026.4.1
+    uses: esphome/workflows/.github/workflows/build.yml@9f6577fd37b5cf773ab1b9be929714a0dcd15661 # 2026.7.0
     with:
       files: ${{ matrix.yaml }}
       esphome-version: stable
