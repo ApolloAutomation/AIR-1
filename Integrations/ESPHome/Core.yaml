@@ -297,6 +297,8 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
+      filters:
+        - round: 0
       accuracy_decimals: 0
       on_value:
         - if:
@@ -315,13 +317,16 @@ sensor:
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
-      accuracy_decimals: 1
       filters:
         - lambda: |-
             float offset = id(dps310_pressure_offset).state;
             return isnan(offset) ? x : x + offset;
+        - round: 1
+      accuracy_decimals: 1
     temperature:
       id: dps310temperature
+      filters:
+        - round: 1
       accuracy_decimals: 1
     update_interval: 30s
     i2c_id: bus_a
@@ -331,34 +336,46 @@ sensor:
     pm_1_0:
       name: "PM <1µm Weight concentration"
       id: pm_1_0
+      filters:
+        - round: 1
       accuracy_decimals: 1
     pm_2_5:
       name: "PM <2.5µm Weight concentration"
       id: pm_2_5
+      filters:
+        - round: 1
       accuracy_decimals: 1
     pm_4_0:
       name: "PM <4µm Weight concentration"
       id: pm_4_0
+      filters:
+        - round: 1
       accuracy_decimals: 1
     pm_10_0:
       name: "PM <10µm Weight concentration"
       id: pm_10_0
+      filters:
+        - round: 1
       accuracy_decimals: 1
     temperature:
       name: "SEN55 Temperature"
       id: sen55_temperature
       filters:
         - lambda: return x - id(sen55_temperature_offset).state;
+        - round: 1
       accuracy_decimals: 1
     humidity:
       name: "SEN55 Humidity"
       id: sen55_humidity
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
+        - round: 1
       accuracy_decimals: 1
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
+      filters:
+        - round: 0
       accuracy_decimals: 0
       on_value:
         - if:
@@ -377,6 +394,8 @@ sensor:
     nox:
       name: "SEN55 NOX"
       id: sen55_nox
+      filters:
+        - round: 0
       accuracy_decimals: 0
     acceleration_mode: low
     store_baseline: true
@@ -395,6 +414,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    filters:
+      - round: 1
     accuracy_decimals: 1
     update_interval: 10s
   
@@ -406,6 +427,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    filters:
+      - round: 1
     accuracy_decimals: 1
     update_interval: 10s
   
@@ -417,6 +440,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    filters:
+      - round: 1
     accuracy_decimals: 1
     update_interval: 10s
 
@@ -428,6 +453,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    filters:
+      - round: 1
     accuracy_decimals: 1
     update_interval: 10s
 
@@ -438,6 +465,8 @@ sensor:
     pm_10_0: pm_10_0
     calculation_type: AQI
     device_class: aqi
+    filters:
+      - round: 0
     accuracy_decimals: 0
     on_value:
       - if:
@@ -451,26 +480,38 @@ sensor:
     nitrogen_dioxide:
       name: Nitrogen Dioxide
       id: nitrogen_dioxide
+      filters:
+        - round: 2
       accuracy_decimals: 2
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
+      filters:
+        - round: 2
       accuracy_decimals: 2
     hydrogen:
       name: Hydrogen
       id: hydrogen
+      filters:
+        - round: 2
       accuracy_decimals: 2
     ethanol:
       name: Ethanol
       id: ethanol
+      filters:
+        - round: 1
       accuracy_decimals: 1
     methane:
       name: Methane
       id: methane
+      filters:
+        - round: 1
       accuracy_decimals: 1
     ammonia:
       name: Ammonia
       id: ammonia
+      filters:
+        - round: 1
       accuracy_decimals: 1
     update_interval: 60s
 
