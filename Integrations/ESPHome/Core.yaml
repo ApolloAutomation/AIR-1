@@ -320,7 +320,22 @@ sensor:
       filters:
         - lambda: |-
             float offset = id(dps310_pressure_offset).state;
-            return isnan(offset) ? x : x + offset;
+            float current_value = isnan(offset) ? x : x + offset;
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = current_value;
+              last_report_time = millis();
+              return current_value;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(current_value - last_reported_value) >= 0.5 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = current_value;
+              last_report_time = now;
+              return current_value;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     temperature:
@@ -337,24 +352,88 @@ sensor:
       name: "PM <1µm Weight concentration"
       id: pm_1_0
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     pm_2_5:
       name: "PM <2.5µm Weight concentration"
       id: pm_2_5
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     pm_4_0:
       name: "PM <4µm Weight concentration"
       id: pm_4_0
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     pm_10_0:
       name: "PM <10µm Weight concentration"
       id: pm_10_0
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     temperature:
@@ -362,6 +441,22 @@ sensor:
       id: sen55_temperature
       filters:
         - lambda: return x - id(sen55_temperature_offset).state;
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 0.5 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     humidity:
@@ -369,12 +464,44 @@ sensor:
       id: sen55_humidity
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 1.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 1
       accuracy_decimals: 1
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 0
       accuracy_decimals: 0
       on_value:
@@ -395,6 +522,22 @@ sensor:
       name: "SEN55 NOX"
       id: sen55_nox
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = millis();
+              return x;
+            }
+            uint32_t now = millis();
+            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 10.0 ||
+                now - last_report_time >= 3600000UL) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+            return {};
         - round: 0
       accuracy_decimals: 0
     acceleration_mode: low
@@ -415,6 +558,22 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     filters:
+      - lambda: |-
+          static float last_reported_value = NAN;
+          static uint32_t last_report_time = 0;
+          if (!id(reduce_db_reporting).state) {
+            last_reported_value = x;
+            last_report_time = millis();
+            return x;
+          }
+          uint32_t now = millis();
+          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+              now - last_report_time >= 3600000UL) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+          return {};
       - round: 1
     accuracy_decimals: 1
     update_interval: 10s
@@ -428,6 +587,22 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     filters:
+      - lambda: |-
+          static float last_reported_value = NAN;
+          static uint32_t last_report_time = 0;
+          if (!id(reduce_db_reporting).state) {
+            last_reported_value = x;
+            last_report_time = millis();
+            return x;
+          }
+          uint32_t now = millis();
+          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+              now - last_report_time >= 3600000UL) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+          return {};
       - round: 1
     accuracy_decimals: 1
     update_interval: 10s
@@ -441,6 +616,22 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     filters:
+      - lambda: |-
+          static float last_reported_value = NAN;
+          static uint32_t last_report_time = 0;
+          if (!id(reduce_db_reporting).state) {
+            last_reported_value = x;
+            last_report_time = millis();
+            return x;
+          }
+          uint32_t now = millis();
+          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+              now - last_report_time >= 3600000UL) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+          return {};
       - round: 1
     accuracy_decimals: 1
     update_interval: 10s
@@ -454,6 +645,22 @@ sensor:
     state_class: measurement
     icon: mdi:air-filter
     filters:
+      - lambda: |-
+          static float last_reported_value = NAN;
+          static uint32_t last_report_time = 0;
+          if (!id(reduce_db_reporting).state) {
+            last_reported_value = x;
+            last_report_time = millis();
+            return x;
+          }
+          uint32_t now = millis();
+          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
+              now - last_report_time >= 3600000UL) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+          return {};
       - round: 1
     accuracy_decimals: 1
     update_interval: 10s
@@ -631,6 +838,14 @@ switch:
   - platform: factory_reset
     id: factory_reset_switch
     internal: true
+
+  - platform: template
+    name: "Reduce DB Reporting"
+    id: reduce_db_reporting
+    icon: mdi:database
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    entity_category: "config"
 
   - platform: template
     name: "Prevent Sleep"
