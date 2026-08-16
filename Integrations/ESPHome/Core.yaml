@@ -2,6 +2,16 @@ substitutions:
   name: apollo-air-1
   version: "26.8.27.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
+
+  # Reduced DB Reporting thresholds
+  reduced_reporting_heartbeat_ms: "3600000UL"
+  pressure_reporting_delta: "0.5"
+  pm_reporting_delta: "5.0"
+  temperature_reporting_delta: "0.5"
+  humidity_reporting_delta: "1.0"
+  voc_reporting_delta: "5.0"
+  nox_reporting_delta: "10.0"
+
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
@@ -323,18 +333,23 @@ sensor:
             float current_value = isnan(offset) ? x : x + offset;
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = current_value;
-              last_report_time = millis();
-              return current_value;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(current_value - last_reported_value) >= 0.5 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = current_value;
               last_report_time = now;
               return current_value;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(current_value - last_reported_value) >= ${pressure_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = current_value;
+              last_report_time = now;
+              return current_value;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -355,18 +370,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -377,18 +397,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -399,18 +424,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -421,18 +451,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -444,18 +479,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 0.5 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${temperature_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -467,18 +507,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 1.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${humidity_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 1
       accuracy_decimals: 1
@@ -489,18 +534,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${voc_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 0
       accuracy_decimals: 0
@@ -525,18 +575,23 @@ sensor:
         - lambda: |-
             static float last_reported_value = NAN;
             static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
             if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = millis();
-              return x;
-            }
-            uint32_t now = millis();
-            if (isnan(last_reported_value) || abs(x - last_reported_value) >= 10.0 ||
-                now - last_report_time >= 3600000UL) {
               last_reported_value = x;
               last_report_time = now;
               return x;
             }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${nox_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
             return {};
         - round: 0
       accuracy_decimals: 0
@@ -561,18 +616,23 @@ sensor:
       - lambda: |-
           static float last_reported_value = NAN;
           static uint32_t last_report_time = 0;
+          const uint32_t now = millis();
+
           if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = millis();
-            return x;
-          }
-          uint32_t now = millis();
-          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-              now - last_report_time >= 3600000UL) {
             last_reported_value = x;
             last_report_time = now;
             return x;
           }
+
+          const bool is_first_report = isnan(last_reported_value);
+          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+          if (is_first_report || has_meaningful_change || heartbeat_due) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+
           return {};
       - round: 1
     accuracy_decimals: 1
@@ -590,18 +650,23 @@ sensor:
       - lambda: |-
           static float last_reported_value = NAN;
           static uint32_t last_report_time = 0;
+          const uint32_t now = millis();
+
           if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = millis();
-            return x;
-          }
-          uint32_t now = millis();
-          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-              now - last_report_time >= 3600000UL) {
             last_reported_value = x;
             last_report_time = now;
             return x;
           }
+
+          const bool is_first_report = isnan(last_reported_value);
+          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+          if (is_first_report || has_meaningful_change || heartbeat_due) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+
           return {};
       - round: 1
     accuracy_decimals: 1
@@ -619,18 +684,23 @@ sensor:
       - lambda: |-
           static float last_reported_value = NAN;
           static uint32_t last_report_time = 0;
+          const uint32_t now = millis();
+
           if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = millis();
-            return x;
-          }
-          uint32_t now = millis();
-          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-              now - last_report_time >= 3600000UL) {
             last_reported_value = x;
             last_report_time = now;
             return x;
           }
+
+          const bool is_first_report = isnan(last_reported_value);
+          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+          if (is_first_report || has_meaningful_change || heartbeat_due) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+
           return {};
       - round: 1
     accuracy_decimals: 1
@@ -648,18 +718,23 @@ sensor:
       - lambda: |-
           static float last_reported_value = NAN;
           static uint32_t last_report_time = 0;
+          const uint32_t now = millis();
+
           if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = millis();
-            return x;
-          }
-          uint32_t now = millis();
-          if (isnan(last_reported_value) || abs(x - last_reported_value) >= 5.0 ||
-              now - last_report_time >= 3600000UL) {
             last_reported_value = x;
             last_report_time = now;
             return x;
           }
+
+          const bool is_first_report = isnan(last_reported_value);
+          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
+          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+          if (is_first_report || has_meaningful_change || heartbeat_due) {
+            last_reported_value = x;
+            last_report_time = now;
+            return x;
+          }
+
           return {};
       - round: 1
     accuracy_decimals: 1
