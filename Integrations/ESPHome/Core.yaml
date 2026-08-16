@@ -39,15 +39,18 @@ substitutions:
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+
   # Default update channel on first boot (no stored user choice yet, i.e. a
   # fresh flash). The beta-channel builds override this to "Beta" (see
   # Integrations/ESPHome/beta-channel/) so firmware obtained from the beta
   # channel keeps tracking it instead of offering a stable "downgrade".
   firmware_channel_default: "Stable"
+
   # Manifest URL bases. Stable = GitHub Pages (main branch builds).
   # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
   stable_manifest_base: "https://apolloautomation.github.io/AIR-1"
   beta_manifest_base: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw"
+
   # Per-variant OTA manifest URLs. Core defaults to the unified (standard)
   # image; AIR-1_BLE.yaml overrides these so legacy BLE devices stay on the
   # firmware-ble manifest.
@@ -114,9 +117,9 @@ api:
             - binary_sensor.is_on: ota_mode
             - switch.is_on: prevent_sleep
         then:
-          - lambda: |- 
+          - lambda: |-
               ESP_LOGW("Apollo", "Preventing Deep Sleep Due To OTA Or Switch");
-              id(deep_sleep_1).prevent_deep_sleep(); 
+              id(deep_sleep_1).prevent_deep_sleep();
         else:
           - lambda: |-
               id(reportAllValues).execute();
@@ -146,11 +149,11 @@ globals:
   - id: cycleCounter
     type: int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
   - id: button_press_timestamp
     restore_value: no
     type: uint32_t
-    initial_value: '0'
+    initial_value: "0"
   - id: runTest
     restore_value: yes
     type: bool
@@ -163,7 +166,6 @@ globals:
     restore_value: no
     type: bool
     initial_value: "false"
-
 
 i2c:
   sda: GPIO1
@@ -252,25 +254,24 @@ number:
       then:
         - lambda: |-
             id(deep_sleep_1).set_sleep_duration(x * 60 * 1000);
-    
 
 binary_sensor:
   - platform: status
     name: Online
     id: ink_ha_connected
   - platform: gpio
-    pin: 
+    pin:
       number: GPIO9
       inverted: true
       mode:
         input: true
         pullup: true
       ignore_strapping_warning: true
-    id: reset_button  
+    id: reset_button
     on_press:
       then:
         - lambda: |-
-            id(button_press_timestamp) = millis();    
+            id(button_press_timestamp) = millis();
     on_release:
       then:
         - lambda: |-
@@ -298,15 +299,15 @@ binary_sensor:
     entity_id: input_boolean.apollo_ota_mode
     on_press:
       then:
-        - lambda: |- 
+        - lambda: |-
             id(deep_sleep_1).prevent_deep_sleep();
-    on_release:  
+    on_release:
       then:
         - if:
             condition:
               switch.is_off: prevent_sleep
             then:
-              - lambda: |- 
+              - lambda: |-
                   id(deep_sleep_1).allow_deep_sleep();
 
 sensor:
@@ -702,7 +703,7 @@ sensor:
       - round: ${pm_decimal_places}
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
-  
+
   - platform: template
     name: "PM 1 To 2.5 µm"
     id: pm1_to_2_5
@@ -736,7 +737,7 @@ sensor:
       - round: ${pm_decimal_places}
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
-  
+
   - platform: template
     name: "PM 2.5 To 4 µm"
     id: pm2_5_to_4
@@ -1064,9 +1065,9 @@ button:
                 id(deep_sleep_1).allow_deep_sleep();
 
 text_sensor:
-    # Convert VOC Index To Text: 
-    # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
-    # https://sensirion.com/media/documents/ACD82D45/6294DFC0/Info_Note_Integration_VOC_NOx_Sensor.pdf
+  # Convert VOC Index To Text:
+  # https://sensirion.com/media/documents/02232963/6294E043/Info_Note_VOC_Index.pdf
+  # https://sensirion.com/media/documents/ACD82D45/6294DFC0/Info_Note_Integration_VOC_NOx_Sensor.pdf
   - platform: template
     name: "VOC Quality"
     id: voc_quality
@@ -1238,7 +1239,7 @@ script:
 
   - id: testScript
     then:
-      if: 
+      if:
         condition:
           - lambda: "return id(runTest) == true;"
         then:
@@ -1257,7 +1258,7 @@ script:
                             - lambda: "return id(dps310pressure).state > 800 && id(dps310pressure).state < 1200;"
                           then:
                             - lambda: "id(dps310Passed) = true;"
-              
+
                 - if:
                     condition:
                       - lambda: "return id(dps310Passed);"
@@ -1266,7 +1267,7 @@ script:
                 - lambda: "id(runTest) = false;"
                 - delay: 1s
                 - lambda: "id(testCycleCount) += 1;"
-          
+
           #Check If Test Passed To Trigger Lights
           - if:
               condition:
@@ -1286,7 +1287,7 @@ script:
                     blue: 0%
                 - light.turn_off:
                     id: rgb_light
-                
+
               else:
                 - lambda: "id(runTest) = false;"
                 - light.turn_on:
@@ -1309,10 +1310,10 @@ script:
     then:
       - if:
           condition:
-            - lambda: 'return id(ink_ha_connected).state;'
+            - lambda: "return id(ink_ha_connected).state;"
           then:
             - logger.log: "Apollo Automation: Connected To HA"
-            - light.turn_on: 
+            - light.turn_on:
                 id: rgb_light
                 brightness: 100%
                 red: 0%
@@ -1324,7 +1325,7 @@ script:
                   - wifi.connected
                 then:
                   - logger.log: "Apollo Automation: Connected To Wifi"
-                  - light.turn_on: 
+                  - light.turn_on:
                       id: rgb_light
                       brightness: 100%
                       red: 0%
@@ -1332,7 +1333,7 @@ script:
                       blue: 0%
                 else:
                   - logger.log: "Apollo Automation: Not Connected To Wifi"
-                  - light.turn_on: 
+                  - light.turn_on:
                       id: rgb_light
                       brightness: 100%
                       red: 100%
