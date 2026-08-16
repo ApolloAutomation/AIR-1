@@ -10,7 +10,14 @@ substitutions:
   temperature_reporting_delta: "0.5"
   humidity_reporting_delta: "1.0"
   voc_reporting_delta: "5.0"
-  nox_reporting_delta: "10.0"
+  nox_reporting_delta: "1.0"
+  co2_reporting_delta: "10.0"
+  nitrogen_dioxide_reporting_delta: "0.05"
+  carbon_monoxide_reporting_delta: "1.0"
+  hydrogen_reporting_delta: "1.0"
+  ethanol_reporting_delta: "0.5"
+  methane_reporting_delta: "100.0"
+  ammonia_reporting_delta: "1.0"
 
   # Sensor decimal places
   co2_decimal_places: "0"
@@ -324,6 +331,27 @@ sensor:
       name: "CO2"
       id: "co2"
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${co2_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${co2_decimal_places}
       accuracy_decimals: ${co2_decimal_places}
       on_value:
@@ -372,6 +400,27 @@ sensor:
     temperature:
       id: dps310temperature
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${temperature_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${temperature_decimal_places}
       accuracy_decimals: ${temperature_decimal_places}
     update_interval: 30s
@@ -779,36 +828,162 @@ sensor:
       name: Nitrogen Dioxide
       id: nitrogen_dioxide
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${nitrogen_dioxide_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${nitrogen_dioxide_decimal_places}
       accuracy_decimals: ${nitrogen_dioxide_decimal_places}
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${carbon_monoxide_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${carbon_monoxide_decimal_places}
       accuracy_decimals: ${carbon_monoxide_decimal_places}
     hydrogen:
       name: Hydrogen
       id: hydrogen
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${hydrogen_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${hydrogen_decimal_places}
       accuracy_decimals: ${hydrogen_decimal_places}
     ethanol:
       name: Ethanol
       id: ethanol
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${ethanol_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${ethanol_decimal_places}
       accuracy_decimals: ${ethanol_decimal_places}
     methane:
       name: Methane
       id: methane
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${methane_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${methane_decimal_places}
       accuracy_decimals: ${methane_decimal_places}
     ammonia:
       name: Ammonia
       id: ammonia
       filters:
+        - lambda: |-
+            static float last_reported_value = NAN;
+            static uint32_t last_report_time = 0;
+            const uint32_t now = millis();
+
+            if (!id(reduce_db_reporting).state) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            const bool is_first_report = isnan(last_reported_value);
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${ammonia_reporting_delta};
+            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+            if (is_first_report || has_meaningful_change || heartbeat_due) {
+              last_reported_value = x;
+              last_report_time = now;
+              return x;
+            }
+
+            return {};
         - round: ${ammonia_decimal_places}
       accuracy_decimals: ${ammonia_decimal_places}
     update_interval: 60s
