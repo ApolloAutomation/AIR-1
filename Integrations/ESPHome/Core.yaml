@@ -328,9 +328,15 @@ sensor:
 
   - platform: scd4x
     id: scd40
+    automatic_self_calibration: true
+    update_interval: 60s
+    measurement_mode: "periodic"
+    i2c_id: bus_a
+    ambient_pressure_compensation_source: dps310pressure
     co2:
       name: "CO2"
       id: "co2"
+      accuracy_decimals: ${co2_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -353,25 +359,21 @@ sensor:
             }
 
             return {};
-        - round: ${co2_decimal_places}
-      accuracy_decimals: ${co2_decimal_places}
       on_value:
         - if:
             condition:
               lambda: 'return id(air_quality_led_source).current_option() == "CO2";'
             then:
               - script.execute: update_air_quality_led
-    automatic_self_calibration: true
-    update_interval: 60s
-    measurement_mode: "periodic"
-    i2c_id: bus_a
-    ambient_pressure_compensation_source: dps310pressure
 
   - platform: dps310
     id: dps_310
+    i2c_id: bus_a
+    update_interval: 30s
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
+      accuracy_decimals: ${pressure_decimal_places}
       filters:
         - lambda: |-
             float offset = id(dps310_pressure_offset).state;
@@ -396,10 +398,9 @@ sensor:
             }
 
             return {};
-        - round: ${pressure_decimal_places}
-      accuracy_decimals: ${pressure_decimal_places}
     temperature:
       id: dps310temperature
+      accuracy_decimals: ${temperature_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -422,16 +423,13 @@ sensor:
             }
 
             return {};
-        - round: ${temperature_decimal_places}
-      accuracy_decimals: ${temperature_decimal_places}
-    update_interval: 30s
-    i2c_id: bus_a
 
   - platform: sen5x
     id: sen55
     pm_1_0:
       name: "PM <1µm Weight concentration"
       id: pm_1_0
+      accuracy_decimals: ${pm_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -454,11 +452,10 @@ sensor:
             }
 
             return {};
-        - round: ${pm_decimal_places}
-      accuracy_decimals: ${pm_decimal_places}
     pm_2_5:
       name: "PM <2.5µm Weight concentration"
       id: pm_2_5
+      accuracy_decimals: ${pm_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -481,11 +478,10 @@ sensor:
             }
 
             return {};
-        - round: ${pm_decimal_places}
-      accuracy_decimals: ${pm_decimal_places}
     pm_4_0:
       name: "PM <4µm Weight concentration"
       id: pm_4_0
+      accuracy_decimals: ${pm_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -508,11 +504,10 @@ sensor:
             }
 
             return {};
-        - round: ${pm_decimal_places}
-      accuracy_decimals: ${pm_decimal_places}
     pm_10_0:
       name: "PM <10µm Weight concentration"
       id: pm_10_0
+      accuracy_decimals: ${pm_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -535,11 +530,10 @@ sensor:
             }
 
             return {};
-        - round: ${pm_decimal_places}
-      accuracy_decimals: ${pm_decimal_places}
     temperature:
       name: "SEN55 Temperature"
       id: sen55_temperature
+      accuracy_decimals: ${temperature_decimal_places}
       filters:
         - lambda: return x - id(sen55_temperature_offset).state;
         - lambda: |-
@@ -563,11 +557,10 @@ sensor:
             }
 
             return {};
-        - round: ${temperature_decimal_places}
-      accuracy_decimals: ${temperature_decimal_places}
     humidity:
       name: "SEN55 Humidity"
       id: sen55_humidity
+      accuracy_decimals: ${humidity_decimal_places}
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
         - lambda: |-
@@ -591,11 +584,10 @@ sensor:
             }
 
             return {};
-        - round: ${humidity_decimal_places}
-      accuracy_decimals: ${humidity_decimal_places}
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
+      accuracy_decimals: ${voc_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -618,8 +610,6 @@ sensor:
             }
 
             return {};
-        - round: ${voc_decimal_places}
-      accuracy_decimals: ${voc_decimal_places}
       on_value:
         - if:
             condition:
@@ -637,7 +627,6 @@ sensor:
     nox:
       name: "SEN55 NOX"
       id: sen55_nox
-        - round: ${nox_decimal_places}
       accuracy_decimals: ${nox_decimal_places}
     acceleration_mode: low
     store_baseline: true
@@ -656,6 +645,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    accuracy_decimals: ${pm_decimal_places}
+    update_interval: 10s
     filters:
       - lambda: |-
           static float last_reported_value = NAN;
@@ -678,9 +669,6 @@ sensor:
           }
 
           return {};
-      - round: ${pm_decimal_places}
-    accuracy_decimals: ${pm_decimal_places}
-    update_interval: 10s
 
   - platform: template
     name: "PM 1 To 2.5 µm"
@@ -690,6 +678,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    accuracy_decimals: ${pm_decimal_places}
+    update_interval: 10s
     filters:
       - lambda: |-
           static float last_reported_value = NAN;
@@ -712,9 +702,6 @@ sensor:
           }
 
           return {};
-      - round: ${pm_decimal_places}
-    accuracy_decimals: ${pm_decimal_places}
-    update_interval: 10s
 
   - platform: template
     name: "PM 2.5 To 4 µm"
@@ -724,6 +711,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    accuracy_decimals: ${pm_decimal_places}
+    update_interval: 10s
     filters:
       - lambda: |-
           static float last_reported_value = NAN;
@@ -746,9 +735,6 @@ sensor:
           }
 
           return {};
-      - round: ${pm_decimal_places}
-    accuracy_decimals: ${pm_decimal_places}
-    update_interval: 10s
 
   - platform: template
     name: "PM 4 To 10 µm"
@@ -758,6 +744,8 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
+    accuracy_decimals: ${pm_decimal_places}
+    update_interval: 10s
     filters:
       - lambda: |-
           static float last_reported_value = NAN;
@@ -780,9 +768,6 @@ sensor:
           }
 
           return {};
-      - round: ${pm_decimal_places}
-    accuracy_decimals: ${pm_decimal_places}
-    update_interval: 10s
 
   - platform: aqi
     name: "NowCast AQI"
@@ -791,8 +776,6 @@ sensor:
     pm_10_0: pm_10_0
     calculation_type: AQI
     device_class: aqi
-    filters:
-      - round: ${aqi_decimal_places}
     accuracy_decimals: ${aqi_decimal_places}
     on_value:
       - if:
@@ -803,9 +786,11 @@ sensor:
 
   - platform: mics_4514
     id: mics4514
+    update_interval: 60s
     nitrogen_dioxide:
       name: Nitrogen Dioxide
       id: nitrogen_dioxide
+      accuracy_decimals: ${nitrogen_dioxide_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -828,11 +813,10 @@ sensor:
             }
 
             return {};
-        - round: ${nitrogen_dioxide_decimal_places}
-      accuracy_decimals: ${nitrogen_dioxide_decimal_places}
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
+      accuracy_decimals: ${carbon_monoxide_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -855,11 +839,10 @@ sensor:
             }
 
             return {};
-        - round: ${carbon_monoxide_decimal_places}
-      accuracy_decimals: ${carbon_monoxide_decimal_places}
     hydrogen:
       name: Hydrogen
       id: hydrogen
+      accuracy_decimals: ${hydrogen_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -882,11 +865,10 @@ sensor:
             }
 
             return {};
-        - round: ${hydrogen_decimal_places}
-      accuracy_decimals: ${hydrogen_decimal_places}
     ethanol:
       name: Ethanol
       id: ethanol
+      accuracy_decimals: ${ethanol_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -909,11 +891,10 @@ sensor:
             }
 
             return {};
-        - round: ${ethanol_decimal_places}
-      accuracy_decimals: ${ethanol_decimal_places}
     methane:
       name: Methane
       id: methane
+      accuracy_decimals: ${methane_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -936,11 +917,10 @@ sensor:
             }
 
             return {};
-        - round: ${methane_decimal_places}
-      accuracy_decimals: ${methane_decimal_places}
     ammonia:
       name: Ammonia
       id: ammonia
+      accuracy_decimals: ${ammonia_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -963,9 +943,6 @@ sensor:
             }
 
             return {};
-        - round: ${ammonia_decimal_places}
-      accuracy_decimals: ${ammonia_decimal_places}
-    update_interval: 60s
 
 light:
   - platform: esp32_rmt_led_strip
