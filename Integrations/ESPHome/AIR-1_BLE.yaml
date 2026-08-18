@@ -3,6 +3,10 @@ substitutions:
   ota_stable_manifest: "https://apolloautomation.github.io/AIR-1/firmware-ble/manifest.json"
   ota_beta_manifest: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw/manifest-ble.json"
 
+  # Legacy BLE devices proxied unconditionally before the Bluetooth Proxy
+  # switch existed, so default it on rather than dropping the proxy on update.
+  bluetooth_proxy_restore_mode: RESTORE_DEFAULT_ON
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
