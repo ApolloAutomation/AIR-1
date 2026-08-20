@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.8.17.1"
+  version: "26.8.20.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -21,6 +21,12 @@ substitutions:
   ota_stable_manifest: "${stable_manifest_base}/firmware/manifest.json"
   ota_beta_manifest: "${beta_manifest_base}/manifest-standard.json"
 
+  # Bluetooth Proxy switch state on a device with no stored preference yet
+  # (first boot after this switch was added, or after a factory reset). The
+  # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
+  # legacy BLE devices keep proxying instead of going quiet after an update.
+  bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
+
 esphome:
   # List form so package merging concatenates with each variant's own on_boot
   # entries (mapping form would be replaced by the variant's block instead).
@@ -29,7 +35,7 @@ esphome:
       then:
         - script.execute: apply_ota_source
     # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
-    # scanning matches the persisted switch (proxy stays off by default).
+    # scanning matches the switch state restored from flash.
     - priority: -300
       then:
         - if:
@@ -612,7 +618,7 @@ switch:
     id: bluetooth_proxy_switch
     icon: mdi:bluetooth
     entity_category: "config"
-    restore_mode: RESTORE_DEFAULT_OFF
+    restore_mode: ${bluetooth_proxy_restore_mode}
     optimistic: true
     on_turn_on:
       - esp32_ble_tracker.start_scan:
