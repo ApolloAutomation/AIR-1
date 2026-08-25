@@ -14,10 +14,10 @@ substitutions:
   co2_reporting_delta: "10.0"
   nitrogen_dioxide_reporting_delta: "0.05"
   carbon_monoxide_reporting_delta: "1.0"
-  hydrogen_reporting_delta: "1.0"
+  hydrogen_reporting_delta: "0.1"
   ethanol_reporting_delta: "0.5"
-  methane_reporting_delta: "100.0"
-  ammonia_reporting_delta: "1.0"
+  methane_reporting_delta: "0.1"
+  ammonia_reporting_delta: "0.1"
 
   # Sensor decimal places
   co2_decimal_places: "0"
@@ -32,8 +32,8 @@ substitutions:
   carbon_monoxide_decimal_places: "2"
   hydrogen_decimal_places: "2"
   ethanol_decimal_places: "1"
-  methane_decimal_places: "1"
-  ammonia_decimal_places: "1"
+  methane_decimal_places: "2"
+  ammonia_decimal_places: "2"
 
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
