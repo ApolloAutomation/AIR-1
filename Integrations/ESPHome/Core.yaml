@@ -466,7 +466,7 @@ light:
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 3
-    rgb_order: grb
+    channel_colors: GRB
     effects:
       - pulse:
           name: "Slow Pulse"
