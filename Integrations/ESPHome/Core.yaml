@@ -47,6 +47,11 @@ esphome:
             else:
               - esp32_ble_tracker.stop_scan:
 
+packages:
+  # Physics-based Predicted Room Temperature/Humidity sensors and their
+  # tuning CONFIG numbers. Everything in it is disabled by default.
+  predicted_room: !include Predicted_Room.yaml
+
 esp32:
   variant: esp32c3
   flash_size: 4MB
