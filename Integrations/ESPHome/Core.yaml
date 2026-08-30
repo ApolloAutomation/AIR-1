@@ -6,11 +6,6 @@ substitutions:
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
-  # Default update channel on first boot (no stored user choice yet, i.e. a
-  # fresh flash). The beta-channel builds override this to "Beta" (see
-  # Integrations/ESPHome/beta-channel/) so firmware obtained from the beta
-  # channel keeps tracking it instead of offering a stable "downgrade".
-  firmware_channel_default: "Stable"
   # Manifest URL bases. Stable = GitHub Pages (main branch builds).
   # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
   stable_manifest_base: "https://apolloautomation.github.io/AIR-1"
@@ -650,7 +645,7 @@ select:
     options:
       - "Stable"
       - "Beta"
-    initial_option: "${firmware_channel_default}"
+    initial_option: "Stable"
     on_value:
       then:
         - script.execute: apply_ota_source

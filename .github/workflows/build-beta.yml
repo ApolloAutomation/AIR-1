@@ -41,8 +41,8 @@ jobs:
         include:
           # Beta serves OTA updates only, so it builds the end-user image
           # (AIR-1.yaml), not the first-flash Factory image.
-          - { yaml: Integrations/ESPHome/beta-channel/AIR-1.yaml,     name: firmware-standard }
-          - { yaml: Integrations/ESPHome/beta-channel/AIR-1_BLE.yaml, name: firmware-ble-beta }
+          - { yaml: Integrations/ESPHome/AIR-1.yaml,     name: firmware-standard }
+          - { yaml: Integrations/ESPHome/AIR-1_BLE.yaml, name: firmware-ble-beta }
     uses: esphome/workflows/.github/workflows/build.yml@025a1e6255610c498ed590403b7e510b69e474df # 2026.4.1
     with:
       files: ${{ matrix.yaml }}
