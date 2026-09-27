@@ -5,31 +5,30 @@ substitutions:
 
   # Reduced DB Reporting thresholds
   reduced_reporting_heartbeat_ms: "3600000UL"
-  pressure_reporting_delta: "0.5"
-  pm_reporting_delta: "5.0"
   temperature_reporting_delta: "0.5"
   humidity_reporting_delta: "1.0"
+  pressure_reporting_delta: "0.5"
+  pm_reporting_delta: "5.0"
   voc_reporting_delta: "5.0"
-  nox_reporting_delta: "1.0"
   co2_reporting_delta: "10.0"
+  co_reporting_delta: "1.0"
   nitrogen_dioxide_reporting_delta: "0.05"
-  carbon_monoxide_reporting_delta: "1.0"
   hydrogen_reporting_delta: "0.1"
   ethanol_reporting_delta: "0.5"
   methane_reporting_delta: "0.1"
   ammonia_reporting_delta: "0.1"
 
   # Sensor decimal places
-  co2_decimal_places: "0"
-  pressure_decimal_places: "1"
   temperature_decimal_places: "1"
   humidity_decimal_places: "1"
+  pressure_decimal_places: "1"
   pm_decimal_places: "1"
   voc_decimal_places: "0"
-  nox_decimal_places: "0"
   aqi_decimal_places: "0"
+  co2_decimal_places: "0"
+  co_decimal_places: "2"
+  nox_decimal_places: "0"
   nitrogen_dioxide_decimal_places: "2"
-  carbon_monoxide_decimal_places: "2"
   hydrogen_decimal_places: "2"
   ethanol_decimal_places: "1"
   methane_decimal_places: "2"
@@ -816,7 +815,7 @@ sensor:
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
-      accuracy_decimals: ${carbon_monoxide_decimal_places}
+      accuracy_decimals: ${co_decimal_places}
       filters:
         - lambda: |-
             static float last_reported_value = NAN;
@@ -830,7 +829,7 @@ sensor:
             }
 
             const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${carbon_monoxide_reporting_delta};
+            const bool has_meaningful_change = abs(x - last_reported_value) >= ${co_reporting_delta};
             const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
             if (is_first_report || has_meaningful_change || heartbeat_due) {
               last_reported_value = x;
