@@ -5,17 +5,17 @@ substitutions:
 
   # Reduced DB Reporting thresholds
   reduced_reporting_heartbeat_ms: "3600000UL"
-  temperature_reporting_delta: "0.5"
-  humidity_reporting_delta: "1.0"
+  temperature_reporting_delta: "0.2"
+  humidity_reporting_delta: "2.0"
   pressure_reporting_delta: "0.5"
-  pm_reporting_delta: "5.0"
+  pm_reporting_delta: "0.5"
   voc_reporting_delta: "5.0"
   co2_reporting_delta: "10.0"
   co_reporting_delta: "1.0"
   nitrogen_dioxide_reporting_delta: "0.05"
   hydrogen_reporting_delta: "0.1"
   ethanol_reporting_delta: "0.5"
-  methane_reporting_delta: "0.1"
+  methane_reporting_delta: "100.0"
   ammonia_reporting_delta: "0.1"
 
   # Sensor decimal places
@@ -26,13 +26,13 @@ substitutions:
   voc_decimal_places: "0"
   aqi_decimal_places: "0"
   co2_decimal_places: "0"
-  co_decimal_places: "2"
+  co_decimal_places: "1"
   nox_decimal_places: "0"
   nitrogen_dioxide_decimal_places: "2"
-  hydrogen_decimal_places: "2"
+  hydrogen_decimal_places: "1"
   ethanol_decimal_places: "1"
-  methane_decimal_places: "2"
-  ammonia_decimal_places: "2"
+  methane_decimal_places: "0"
+  ammonia_decimal_places: "1"
 
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
