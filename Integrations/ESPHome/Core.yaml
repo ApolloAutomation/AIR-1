@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.8.27.1"
+  version: "26.9.29.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -280,11 +280,6 @@ sensor:
   - platform: internal_temperature
     name: "ESP Temperature"
     id: sys_esp_temperature
-
-  - platform: uptime
-    name: Uptime
-    id: sys_uptime
-    update_interval: 60s
 
   - platform: wifi_signal
     name: RSSI
@@ -569,6 +564,12 @@ text_sensor:
     id: apollo_firmware_version
     update_interval: never
     entity_category: "diagnostic"
+  - platform: uptime
+    name: Uptime
+    id: sys_uptime
+    update_interval: 60s
+    format:
+      separator: " "
 
 switch:
   - platform: factory_reset
