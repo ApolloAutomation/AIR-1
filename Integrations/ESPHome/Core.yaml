@@ -337,27 +337,7 @@ sensor:
       id: "co2"
       accuracy_decimals: ${co2_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${co2_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${co2_reporting_delta}" } }
       on_value:
         - if:
             condition:
@@ -375,53 +355,14 @@ sensor:
       accuracy_decimals: ${pressure_decimal_places}
       filters:
         - lambda: |-
-            float offset = id(dps310_pressure_offset).state;
-            float current_value = isnan(offset) ? x : x + offset;
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = current_value;
-              last_report_time = now;
-              return current_value;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(current_value - last_reported_value) >= ${pressure_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = current_value;
-              last_report_time = now;
-              return current_value;
-            }
-
-            return {};
+            const float offset = id(dps310_pressure_offset).state;
+            return isnan(offset) ? x : x + offset;
+        - !include { file: reduce_filter.yaml, vars: { delta: "${pressure_reporting_delta}" } }
     temperature:
       id: dps310temperature
       accuracy_decimals: ${temperature_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${temperature_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${temperature_reporting_delta}" } }
 
   - platform: sen5x
     id: sen55
@@ -430,185 +371,45 @@ sensor:
       id: pm_1_0
       accuracy_decimals: ${pm_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
     pm_2_5:
       name: "PM <2.5µm Weight concentration"
       id: pm_2_5
       accuracy_decimals: ${pm_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
     pm_4_0:
       name: "PM <4µm Weight concentration"
       id: pm_4_0
       accuracy_decimals: ${pm_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
     pm_10_0:
       name: "PM <10µm Weight concentration"
       id: pm_10_0
       accuracy_decimals: ${pm_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
     temperature:
       name: "SEN55 Temperature"
       id: sen55_temperature
       accuracy_decimals: ${temperature_decimal_places}
       filters:
         - lambda: return x - id(sen55_temperature_offset).state;
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${temperature_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${temperature_reporting_delta}" } }
     humidity:
       name: "SEN55 Humidity"
       id: sen55_humidity
       accuracy_decimals: ${humidity_decimal_places}
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${humidity_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${humidity_reporting_delta}" } }
     voc:
       name: "SEN55 VOC"
       id: sen55_voc
       accuracy_decimals: ${voc_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${voc_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${voc_reporting_delta}" } }
       on_value:
         - if:
             condition:
@@ -647,27 +448,7 @@ sensor:
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
     filters:
-      - lambda: |-
-          static float last_reported_value = NAN;
-          static uint32_t last_report_time = 0;
-          const uint32_t now = millis();
-
-          if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          const bool is_first_report = isnan(last_reported_value);
-          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-          if (is_first_report || has_meaningful_change || heartbeat_due) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          return {};
+      - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
 
   - platform: template
     name: "PM 1 To 2.5 µm"
@@ -680,27 +461,7 @@ sensor:
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
     filters:
-      - lambda: |-
-          static float last_reported_value = NAN;
-          static uint32_t last_report_time = 0;
-          const uint32_t now = millis();
-
-          if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          const bool is_first_report = isnan(last_reported_value);
-          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-          if (is_first_report || has_meaningful_change || heartbeat_due) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          return {};
+      - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
 
   - platform: template
     name: "PM 2.5 To 4 µm"
@@ -713,27 +474,7 @@ sensor:
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
     filters:
-      - lambda: |-
-          static float last_reported_value = NAN;
-          static uint32_t last_report_time = 0;
-          const uint32_t now = millis();
-
-          if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          const bool is_first_report = isnan(last_reported_value);
-          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-          if (is_first_report || has_meaningful_change || heartbeat_due) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          return {};
+      - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
 
   - platform: template
     name: "PM 4 To 10 µm"
@@ -746,27 +487,7 @@ sensor:
     accuracy_decimals: ${pm_decimal_places}
     update_interval: 10s
     filters:
-      - lambda: |-
-          static float last_reported_value = NAN;
-          static uint32_t last_report_time = 0;
-          const uint32_t now = millis();
-
-          if (!id(reduce_db_reporting).state) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          const bool is_first_report = isnan(last_reported_value);
-          const bool has_meaningful_change = abs(x - last_reported_value) >= ${pm_reporting_delta};
-          const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-          if (is_first_report || has_meaningful_change || heartbeat_due) {
-            last_reported_value = x;
-            last_report_time = now;
-            return x;
-          }
-
-          return {};
+      - !include { file: reduce_filter.yaml, vars: { delta: "${pm_reporting_delta}" } }
 
   - platform: aqi
     name: "NowCast AQI"
@@ -791,157 +512,37 @@ sensor:
       id: nitrogen_dioxide
       accuracy_decimals: ${nitrogen_dioxide_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${nitrogen_dioxide_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${nitrogen_dioxide_reporting_delta}" } }
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
       accuracy_decimals: ${co_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${co_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${co_reporting_delta}" } }
     hydrogen:
       name: Hydrogen
       id: hydrogen
       accuracy_decimals: ${hydrogen_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${hydrogen_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${hydrogen_reporting_delta}" } }
     ethanol:
       name: Ethanol
       id: ethanol
       accuracy_decimals: ${ethanol_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${ethanol_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${ethanol_reporting_delta}" } }
     methane:
       name: Methane
       id: methane
       accuracy_decimals: ${methane_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${methane_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${methane_reporting_delta}" } }
     ammonia:
       name: Ammonia
       id: ammonia
       accuracy_decimals: ${ammonia_decimal_places}
       filters:
-        - lambda: |-
-            static float last_reported_value = NAN;
-            static uint32_t last_report_time = 0;
-            const uint32_t now = millis();
-
-            if (!id(reduce_db_reporting).state) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            const bool is_first_report = isnan(last_reported_value);
-            const bool has_meaningful_change = abs(x - last_reported_value) >= ${ammonia_reporting_delta};
-            const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
-            if (is_first_report || has_meaningful_change || heartbeat_due) {
-              last_reported_value = x;
-              last_report_time = now;
-              return x;
-            }
-
-            return {};
+        - !include { file: reduce_filter.yaml, vars: { delta: "${ammonia_reporting_delta}" } }
 
 light:
   - platform: esp32_rmt_led_strip
