@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.8.27.1"
+  version: "26.10.8.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -663,8 +663,8 @@ script:
     then:
       - lambda: |-
           const bool beta = id(firmware_channel).current_option() == "Beta";
-          std::string url = beta ? "${ota_beta_manifest}" : "${ota_stable_manifest}";
-          ESP_LOGI("firmware", "OTA manifest set to: %s", url.c_str());
+          const char *url = beta ? "${ota_beta_manifest}" : "${ota_stable_manifest}";
+          ESP_LOGI("firmware", "OTA manifest set to: %s", url);
           id(update_http_request).set_source_url(url);
       - component.update: update_http_request
 
