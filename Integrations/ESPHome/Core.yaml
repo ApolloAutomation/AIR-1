@@ -1,11 +1,51 @@
 substitutions:
   name: apollo-air-1
-  version: "26.6.25.1"
+  version: "26.10.8.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+  # Default update channel on first boot (no stored user choice yet, i.e. a
+  # fresh flash). The beta-channel builds override this to "Beta" (see
+  # Integrations/ESPHome/beta-channel/) so firmware obtained from the beta
+  # channel keeps tracking it instead of offering a stable "downgrade".
+  firmware_channel_default: "Stable"
+  # Manifest URL bases. Stable = GitHub Pages (main branch builds).
+  # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
+  stable_manifest_base: "https://apolloautomation.github.io/AIR-1"
+  beta_manifest_base: "https://github.com/ApolloAutomation/AIR-1/releases/download/beta-fw"
+  # Per-variant OTA manifest URLs. Core defaults to the unified (standard)
+  # image; AIR-1_BLE.yaml overrides these so legacy BLE devices stay on the
+  # firmware-ble manifest.
+  ota_stable_manifest: "${stable_manifest_base}/firmware/manifest.json"
+  ota_beta_manifest: "${beta_manifest_base}/manifest-standard.json"
+
+  # Bluetooth Proxy switch state on a device with no stored preference yet
+  # (first boot after this switch was added, or after a factory reset). The
+  # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
+  # legacy BLE devices keep proxying instead of going quiet after an update.
+  bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
+
+esphome:
+  # List form so package merging concatenates with each variant's own on_boot
+  # entries (mapping form would be replaced by the variant's block instead).
+  on_boot:
+    - priority: -100
+      then:
+        - script.execute: apply_ota_source
+    # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
+    # scanning matches the switch state restored from flash.
+    - priority: -300
+      then:
+        - if:
+            condition:
+              switch.is_on: bluetooth_proxy_switch
+            then:
+              - esp32_ble_tracker.start_scan:
+                  continuous: true
+            else:
+              - esp32_ble_tracker.stop_scan:
 
 packages:
   # Physics-based Predicted Room Temperature/Humidity sensors and their
@@ -18,7 +58,26 @@ esp32:
   framework:
     type: esp-idf
 
+esp32_ble_tracker:
+  id: ble_tracker
+  scan_parameters:
+    continuous: true
+
+bluetooth_proxy:
+
+http_request:
+  verify_ssl: true
+  # GitHub release-asset downloads answer with a redirect carrying a
+  # ~3.6 KB Content-Security-Policy header; each header line must fit
+  # this buffer or the request fails with "HTTP_CLIENT: Out of buffer".
+  buffer_size_rx: 5120
+  # The redirect target is a signed URL with a ~850-char query string; the
+  # follow-up request line must fit the TX buffer or esp_http_client_open
+  # fails with "Out of buffer" before sending anything.
+  buffer_size_tx: 2048
+
 api:
+  encryption:
   on_client_connected:
     - delay: 90s
     - if:
@@ -299,7 +358,7 @@ sensor:
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
       accuracy_decimals: 1
-    voc:
+    voc_index:
       name: "SEN55 VOC"
       id: sen55_voc
       on_value:
@@ -316,11 +375,15 @@ sensor:
         gating_max_duration_minutes: 180
         std_initial: 50
         gain_factor: 230
-    nox:
+    nox_index:
       name: "SEN55 NOX"
       id: sen55_nox
     acceleration_mode: low
     store_baseline: true
+    # Some units misreport SEN54 on the product name register even though the
+    # NOx element is present; forcing the model keeps NOx enabled. Needs the
+    # model option from esphome 2026.7.2.
+    model: sen55
     address: 0x69
     update_interval: 10s
 
@@ -408,7 +471,7 @@ light:
     default_transition_length: 0s
     chipset: WS2812
     num_leds: 3
-    rgb_order: grb
+    channel_colors: GRB
     effects:
       - pulse:
           name: "Slow Pulse"
@@ -446,6 +509,34 @@ button:
     id: clean_sen55
     on_press:
       - sen5x.start_fan_autoclean: sen55
+
+  - platform: template
+    name: "Firmware Update"
+    id: update_firmware
+    icon: mdi:cloud-download
+    entity_category: "config"
+    on_press:
+      - logger.log: "Applying firmware update for the selected channel"
+      # OTA download needs the device awake for its whole duration.
+      - lambda: |-
+          id(deep_sleep_1).prevent_deep_sleep();
+      - delay: 3s
+      - script.execute: apply_ota_source
+      - script.wait: apply_ota_source
+      # The manifest fetch runs in its own task; give it a fixed window to land
+      # (update.is_available stays false for same-version switches).
+      - delay: 5s
+      - lambda: id(update_http_request).perform(true);
+      # Only reached if the update did not start (e.g. manifest unreachable).
+      # Re-arm deep sleep unless something else is holding the device awake.
+      - if:
+          condition:
+            and:
+              - switch.is_off: prevent_sleep
+              - binary_sensor.is_off: ota_mode
+          then:
+            - lambda: |-
+                id(deep_sleep_1).allow_deep_sleep();
 
 text_sensor:
     # Convert VOC Index To Text: 
@@ -527,6 +618,19 @@ switch:
             id: setCo2AutoCalibration
             enable: false
 
+  - platform: template
+    name: "Bluetooth Proxy"
+    id: bluetooth_proxy_switch
+    icon: mdi:bluetooth
+    entity_category: "config"
+    restore_mode: ${bluetooth_proxy_restore_mode}
+    optimistic: true
+    on_turn_on:
+      - esp32_ble_tracker.start_scan:
+          continuous: true
+    on_turn_off:
+      - esp32_ble_tracker.stop_scan:
+
 select:
   - platform: template
     name: "Air Quality LED Source"
@@ -541,7 +645,34 @@ select:
       then:
         - script.execute: update_air_quality_led
 
+  - platform: template
+    name: "Firmware Channel"
+    id: firmware_channel
+    icon: mdi:source-branch
+    entity_category: "config"
+    optimistic: true
+    restore_value: true
+    options:
+      - "Stable"
+      - "Beta"
+    initial_option: "${firmware_channel_default}"
+    on_value:
+      then:
+        - script.execute: apply_ota_source
+
 script:
+  - id: apply_ota_source
+    # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
+    # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
+    # AIR-1_BLE builds keep their firmware-ble manifest.
+    then:
+      - lambda: |-
+          const bool beta = id(firmware_channel).current_option() == "Beta";
+          const char *url = beta ? "${ota_beta_manifest}" : "${ota_stable_manifest}";
+          ESP_LOGI("firmware", "OTA manifest set to: %s", url);
+          id(update_http_request).set_source_url(url);
+      - component.update: update_http_request
+
   - id: setCo2AutoCalibration
     mode: restart
     parameters:
@@ -639,6 +770,8 @@ script:
                 - light.turn_off:
                     id: rgb_light
 
+          - script.execute: restore_air_quality_led
+
   - id: statusCheck
     then:
       - if:
@@ -674,6 +807,7 @@ script:
                       blue: 0%
       - delay: 5s
       - light.turn_off: rgb_light
+      - script.execute: restore_air_quality_led
   - id: reportAllValues
     then:
       - component.update: sen55
@@ -758,3 +892,15 @@ script:
             case 5: call.set_rgb(0.5f, 0.0f, 0.0f); break;   // Maroon - Hazardous
           }
           call.perform();
+
+  # Runs after statusCheck/testScript finish so the air-quality color comes
+  # back right away instead of waiting for the next sensor on_value (up to 60s
+  # when CO2 is the source). statusCheck/testScript call this as their last
+  # action; the short delay lets the calling script finish first so
+  # update_air_quality_led's is_running() guard passes. mode: restart so a
+  # rapid second status flash doesn't stack pending restores.
+  - id: restore_air_quality_led
+    mode: restart
+    then:
+      - delay: 200ms
+      - script.execute: update_air_quality_led

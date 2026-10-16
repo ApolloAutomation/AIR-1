@@ -7,10 +7,13 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2025.11.0
+  min_version: 2026.8.0
   on_boot:
     - priority: 500
       then:
+        - text_sensor.template.publish:
+            id: apollo_firmware_version
+            state: "${version}"
         - lambda: |-
             id(deep_sleep_1).set_sleep_duration(id(deep_sleep_sleep_duration).state * 60 * 1000);
         - if:
@@ -32,12 +35,9 @@ esphome:
   on_shutdown:
     - light.turn_off: rgb_light
 
-
 dashboard_import:
   package_import_url: github://ApolloAutomation/AIR-1/Integrations/ESPHome/AIR-1_Factory.yaml
   import_full_config: false
-
-improv_serial:
 
 logger:
 
@@ -47,9 +47,6 @@ ota:
   - platform: http_request
     id: ota_managed
 
-http_request:
-  verify_ssl: true
-
 safe_mode:
 
 update:
@@ -57,6 +54,8 @@ update:
     id: update_http_request
     name: Firmware Update
     source: https://apolloautomation.github.io/AIR-1/firmware/manifest.json
+
+improv_serial:
 
 esp32_improv:
   authorizer: none

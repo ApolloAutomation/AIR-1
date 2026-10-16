@@ -1,0 +1,9 @@
+# Beta-channel build of AIR-1.yaml: the identical image except the Firmware
+# Channel select defaults to "Beta" on first boot, so firmware obtained from
+# the beta channel keeps tracking it. Built by build-beta.yml only; the
+# stable (GitHub Pages) builds use AIR-1.yaml directly.
+substitutions:
+  firmware_channel_default: "Beta"
+
+packages:
+  base: !include ../AIR-1.yaml
