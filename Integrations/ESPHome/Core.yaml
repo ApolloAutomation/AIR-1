@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.10.8.1"
+  version: "26.10.16.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -46,6 +46,11 @@ esphome:
                   continuous: true
             else:
               - esp32_ble_tracker.stop_scan:
+
+packages:
+  # Physics-based Predicted Room Temperature/Humidity sensors and their
+  # tuning CONFIG numbers. Everything in it is disabled by default.
+  predicted_room: !include Predicted_Room.yaml
 
 esp32:
   variant: esp32c3
