@@ -83,7 +83,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
-    update_interval: 10s
+    update_interval: 60s
     lambda: |-
       // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
       // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
@@ -124,7 +124,7 @@ sensor:
     device_class: humidity
     state_class: measurement
     accuracy_decimals: 1
-    update_interval: 10s
+    update_interval: 60s
     lambda: |-
       // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
       // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
