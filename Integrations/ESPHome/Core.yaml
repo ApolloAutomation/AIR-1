@@ -200,6 +200,7 @@ number:
     min_value: -100.0
     max_value: 100.0
     entity_category: "CONFIG"
+    device_class: "pressure"
     unit_of_measurement: "hPa"
     optimistic: true
     update_interval: never
@@ -285,6 +286,7 @@ sensor:
   - platform: internal_temperature
     name: "ESP Temperature"
     id: sys_esp_temperature
+    device_class: "temperature"
 
   - platform: uptime
     name: Uptime
@@ -294,6 +296,7 @@ sensor:
   - platform: wifi_signal
     name: RSSI
     id: wifi_signal_db
+    device_class: "signal_strength"
     update_interval: 60s
     entity_category: "diagnostic"
 
@@ -302,6 +305,7 @@ sensor:
     co2:
       name: "CO2"
       id: "co2"
+      device_class: "carbon_dioxide"
       on_value:
         - if:
             condition:
@@ -319,6 +323,7 @@ sensor:
     pressure:
       name: "DPS310 Pressure"
       id: dps310pressure
+      device_class: "atmospheric_pressure"
       filters:
         - lambda: |-
             float offset = id(dps310_pressure_offset).state;
@@ -333,28 +338,34 @@ sensor:
     pm_1_0:
       name: "PM <1µm Weight concentration"
       id: pm_1_0
+      device_class: "pm1"
       accuracy_decimals: 1
     pm_2_5:
       name: "PM <2.5µm Weight concentration"
       id: pm_2_5
+      device_class: "pm25"
       accuracy_decimals: 1
     pm_4_0:
       name: "PM <4µm Weight concentration"
       id: pm_4_0
+      device_class: "pm4"
       accuracy_decimals: 1
     pm_10_0:
       name: "PM <10µm Weight concentration"
       id: pm_10_0
+      device_class: "pm10"
       accuracy_decimals: 1
     temperature:
       name: "SEN55 Temperature"
       id: sen55_temperature
+      device_class: "temperature"
       filters:
         - lambda: return x - id(sen55_temperature_offset).state;
       accuracy_decimals: 1
     humidity:
       name: "SEN55 Humidity"
       id: sen55_humidity
+      device_class: "humidity"
       filters:
         - lambda: return x - id(sen55_humidity_offset).state;
       accuracy_decimals: 1
@@ -433,7 +444,7 @@ sensor:
     pm_2_5: pm_2_5
     pm_10_0: pm_10_0
     calculation_type: AQI
-    device_class: aqi
+    device_class: "aqi"
     on_value:
       - if:
           condition:
@@ -446,9 +457,11 @@ sensor:
     nitrogen_dioxide:
       name: Nitrogen Dioxide
       id: nitrogen_dioxide
+      device_class: "nitrogen_dioxide"
     carbon_monoxide:
       name: Carbon Monoxide
       id: carbon_monoxide
+      device_class: "carbon_monoxide"
     hydrogen:
       name: Hydrogen
       id: hydrogen
