@@ -1,0 +1,21 @@
+lambda: |-
+  static float last_reported_value = NAN;
+  static uint32_t last_report_time = 0;
+  const uint32_t now = millis();
+
+  if (!id(reduce_db_reporting).state) {
+    last_reported_value = x;
+    last_report_time = now;
+    return x;
+  }
+
+  const bool is_first_report = isnan(last_reported_value);
+  const bool has_meaningful_change = abs(x - last_reported_value) >= ${delta};
+  const bool heartbeat_due = now - last_report_time >= ${reduced_reporting_heartbeat_ms};
+  if (is_first_report || has_meaningful_change || heartbeat_due) {
+    last_reported_value = x;
+    last_report_time = now;
+    return x;
+  }
+
+  return {};
