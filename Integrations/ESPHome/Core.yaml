@@ -38,6 +38,28 @@ substitutions:
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+  # To use OTA encryption instead of the password, modify the packaged
+  # ESPHome OTA entry (id: ota_esphome) from your own device YAML instead of
+  # adding a second one. The OTA key is taken from a static
+  # `api: encryption: key:` in your device YAML (a key provisioned at runtime
+  # cannot be reused; set `ota` `encryption: key:` explicitly in that case).
+  # This takes two flashes:
+  #
+  #   # Flash 1: keep the password so the running firmware's password prompt
+  #   # can still be answered, and allow this one plaintext upload.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       encryption:
+  #         allow_plaintext_upload: true
+  #
+  #   # Flash 2: the device now accepts encrypted uploads; drop the password
+  #   # and the plaintext allowance.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       password: !remove
+  #       encryption: {}
+  #
+  # See https://esphome.io/components/ota/esphome/
 
   # Default update channel on first boot (no stored user choice yet, i.e. a
   # fresh flash). The beta-channel builds override this to "Beta" (see
