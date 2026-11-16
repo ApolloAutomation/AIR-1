@@ -74,6 +74,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Only beta publishes; runs dispatched on other branches build but never
+          # touch the beta-fw release.
+          if [ "$GITHUB_REF" != "refs/heads/beta" ]; then
+            echo "::notice::Not publishing: this run is on $GITHUB_REF, not beta."
+            exit 0
+          fi
           gh release view beta-fw -R "${{ github.repository }}" >/dev/null 2>&1 \
             || gh release create beta-fw -R "${{ github.repository }}" \
                  --prerelease --title "Beta (rolling)" \
