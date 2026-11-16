@@ -472,6 +472,21 @@ sensor:
       device_class: "temperature"
       accuracy_decimals: ${temperature_decimal_places}
       filters:
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window Predicted_Room.yaml waits out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
         - lambda: return x - id(sen55_temperature_offset).state;
         - !include { file: reduce_filter.yaml, vars: { delta: "${temperature_reporting_delta}" } }
     humidity:
@@ -480,6 +495,21 @@ sensor:
       device_class: "humidity"
       accuracy_decimals: ${humidity_decimal_places}
       filters:
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window Predicted_Room.yaml waits out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
         # The temperature offset models enclosure self-heating, so the air
         # the SEN55 measures holds the same water vapour as the room but at a
         # higher temperature. Re-reference RH to the corrected temperature at
