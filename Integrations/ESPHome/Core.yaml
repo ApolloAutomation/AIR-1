@@ -89,7 +89,7 @@ esphome:
               - script.execute: bluetooth_proxy_off
 
 packages:
-  # Physics-based Predicted Room Temperature/Humidity sensors and their
+  # Physics-based Estimated Room Temperature/Humidity sensors and their
   # tuning CONFIG numbers. Everything in it is disabled by default.
   predicted_room: !include Predicted_Room.yaml
 
@@ -474,7 +474,7 @@ sensor:
       filters:
         # Warm-up: the first readings after power-up are off while the SEN55
         # and enclosure settle, so drop them for the first 3 minutes (the same
-        # window Predicted_Room.yaml waits out). Only while deep sleep is
+        # window the Estimated Room sensors wait out). Only while deep sleep is
         # prevented: a sleeping unit is awake ~2 minutes per cycle and would
         # otherwise never report.
         - lambda: |-
@@ -497,7 +497,7 @@ sensor:
       filters:
         # Warm-up: the first readings after power-up are off while the SEN55
         # and enclosure settle, so drop them for the first 3 minutes (the same
-        # window Predicted_Room.yaml waits out). Only while deep sleep is
+        # window the Estimated Room sensors wait out). Only while deep sleep is
         # prevented: a sleeping unit is awake ~2 minutes per cycle and would
         # otherwise never report.
         - lambda: |-

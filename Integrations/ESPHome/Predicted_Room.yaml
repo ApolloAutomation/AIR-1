@@ -1,4 +1,4 @@
-# Physics-based room temperature/humidity prediction.
+# Physics-based room temperature/humidity estimate.
 # Research and coefficient fitting by Ellude (Apollo Discord).
 #
 # The Air-1 enclosure self-heats, so the on-board sensors read warmer/drier
@@ -72,11 +72,11 @@ number:
     mode: box
 
 sensor:
-  # Room temperature prediction. Blends the three on-board temperature sensors
+  # Estimated room temperature. Blends the three on-board temperature sensors
   # and corrects for enclosure self-heating using the Physics Multiplier P /
   # Baseline Offset CONFIG numbers above.
   - platform: template
-    name: "Predicted Room Temperature"
+    name: "Estimated Room Temperature"
     id: predicted_room_temperature
     disabled_by_default: true
     unit_of_measurement: "°C"
@@ -85,7 +85,7 @@ sensor:
     accuracy_decimals: 2
     update_interval: 10s
     lambda: |-
-      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial estimates).
       // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
       float uptime = id(sys_uptime).state;
       if (std::isnan(uptime) || uptime < 180.0) {
@@ -99,7 +99,7 @@ sensor:
       float p_val = id(coefficient_p).state;
       float baseline = id(baseline_offset).state;
 
-      // Ensure all sensors and coefficients are valid numbers before predicting
+      // Ensure all sensors and coefficients are valid numbers before estimating
       if (std::isnan(t_sen) || std::isnan(t_dps) || std::isnan(t_scd) ||
           std::isnan(p_val) || std::isnan(baseline)) {
         return NAN;
@@ -111,13 +111,13 @@ sensor:
       // Estimate the required offset
       float t_offset = p_val * (t_scd - t_sen);
 
-      // Return predicted room temperature
+      // Return the estimated room temperature
       return t_base - t_offset + baseline;
 
-  # Room humidity prediction. Re-references each sensor's RH to the predicted
+  # Estimated room humidity. Re-references each sensor's RH to the estimated
   # room temperature (Magnus formula), then blends by manufacturing tolerance.
   - platform: template
-    name: "Predicted Room Humidity"
+    name: "Estimated Room Humidity"
     id: predicted_room_humidity
     disabled_by_default: true
     unit_of_measurement: "%"
@@ -126,14 +126,14 @@ sensor:
     accuracy_decimals: 1
     update_interval: 10s
     lambda: |-
-      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial predictions).
+      // Make sure the Air-1 is running at least for 3 minutes (avoid bad initial estimates).
       // sys_uptime is NAN until its first publish, and NAN < 180.0 is false, so guard for it.
       float uptime = id(sys_uptime).state;
       if (std::isnan(uptime) || uptime < 180.0) {
         return NAN;
       }
 
-      // Fetch the calculated Predicted Room Temperature
+      // Fetch the calculated Estimated Room Temperature
       float t_room = id(predicted_room_temperature).state;
 
       // Fetch Sensor data
@@ -170,7 +170,7 @@ sensor:
 
       return final_rh;
 
-  # Expose the raw sensors the prediction reads from, with tuning offsets,
+  # Expose the raw sensors the estimate reads from, with tuning offsets,
   # by extending the hardware sensor blocks defined in Core.yaml.
   - id: !extend scd40
     temperature:
