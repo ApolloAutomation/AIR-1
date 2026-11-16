@@ -22,7 +22,8 @@ YAML Files (in Integrations/ESPHome):
 - AIR-1_BLE.yaml: This is the legacy BLE build for devices that originally shipped with the Bluetooth Proxy always on. It is the same firmware as AIR-1.yaml, except the Bluetooth Proxy switch defaults to on and it updates from its own firmware-ble manifest, so those devices keep proxying after an update.
 - AIR-1_Factory.yaml: This is the firmware flashed by us on new devices and used by the web installer for first flashes. It contains the components for ESP improv (serial and Bluetooth), allowing easy Wi-Fi setup and adoption in Home Assistant, plus our factory test. Once the device updates over the air, it receives the AIR-1.yaml firmware, which no longer has improv.
 - Core.yaml: Shared configuration included by all of the files above (sensors, light, Bluetooth Proxy, Firmware Channel and the firmware version number). You don't flash this file directly.
-- Predicted_Room.yaml: Included from Core.yaml. Adds optional Predicted Room Temperature/Humidity sensors that correct for the enclosure's self-heating, plus their tuning settings. Everything in it is disabled by default.
+- Predicted_Room.yaml: Included from Core.yaml. Adds optional Estimated Room Temperature/Humidity sensors (called Predicted Room in older firmware) that correct for the enclosure's self-heating, plus their tuning settings. Everything in it is disabled by default.
+- reduce_filter.yaml: Included from Core.yaml. The filter behind the "Reduce DB Reporting" switch: when it is on, a sensor only reports when its value changes meaningfully or a periodic heartbeat is due. You don't flash this file directly.
 - beta-channel/: Build-only copies of AIR-1.yaml and AIR-1_BLE.yaml that default the Firmware Channel to Beta. These are used by our beta builds so devices installed from the beta channel keep following it. You don't need these for your own configs.
 
 Firmware Channels:
