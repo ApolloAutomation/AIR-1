@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.10.16.1"
+  version: "26.11.15.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
   # Default OTA password. Override in your device YAML by re-declaring
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
@@ -27,6 +27,15 @@ substitutions:
   # legacy BLE devices keep proxying instead of going quiet after an update.
   bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
 
+  # Default polling intervals (ms). The Reduce DB Reporting switch raises these
+  # to reduced_db_interval and restores them when turned off, so the sensor
+  # blocks and the apply_reporting_interval script must both use these.
+  sen55_interval: "10000"
+  dps310_interval: "30000"
+  pm_range_interval: "10000"
+  predicted_room_interval: "10000"
+  reduced_db_interval: "60000"
+
 esphome:
   # List form so package merging concatenates with each variant's own on_boot
   # entries (mapping form would be replaced by the variant's block instead).
@@ -34,6 +43,10 @@ esphome:
     - priority: -100
       then:
         - script.execute: apply_ota_source
+        # The Reduce DB Reporting switch restores before the sensors finish
+        # setup (component.resume skips components that aren't ready yet), so
+        # re-apply the polling intervals once everything is up.
+        - script.execute: apply_reporting_interval
     # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
     # scanning matches the switch state restored from flash.
     - priority: -300
@@ -325,7 +338,7 @@ sensor:
             return isnan(offset) ? x : x + offset;
     temperature:
       id: dps310temperature
-    update_interval: 30s
+    update_interval: ${dps310_interval}ms
     i2c_id: bus_a
 
   - platform: sen5x
@@ -385,7 +398,7 @@ sensor:
     # model option from esphome 2026.7.2.
     model: sen55
     address: 0x69
-    update_interval: 10s
+    update_interval: ${sen55_interval}ms
 
   - platform: template
     name: "PM 0.3 To 1 µm"
@@ -395,7 +408,7 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
-    update_interval: 10s
+    update_interval: ${pm_range_interval}ms
   
   - platform: template
     name: "PM 1 To 2.5 µm"
@@ -405,7 +418,7 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
-    update_interval: 10s
+    update_interval: ${pm_range_interval}ms
   
   - platform: template
     name: "PM 2.5 To 4 µm"
@@ -415,7 +428,7 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
-    update_interval: 10s
+    update_interval: ${pm_range_interval}ms
 
   - platform: template
     name: "PM 4 To 10 µm"
@@ -425,7 +438,7 @@ sensor:
     unit_of_measurement: "µg/m³"
     state_class: measurement
     icon: mdi:air-filter
-    update_interval: 10s
+    update_interval: ${pm_range_interval}ms
 
   - platform: aqi
     name: "NowCast AQI"
@@ -631,6 +644,18 @@ switch:
     on_turn_off:
       - esp32_ble_tracker.stop_scan:
 
+  - platform: template
+    name: "Reduce DB Reporting"
+    id: reduce_db_reporting
+    icon: mdi:database
+    restore_mode: RESTORE_DEFAULT_OFF
+    optimistic: true
+    entity_category: "config"
+    on_turn_on:
+      - script.execute: apply_reporting_interval
+    on_turn_off:
+      - script.execute: apply_reporting_interval
+
 select:
   - platform: template
     name: "Air Quality LED Source"
@@ -661,6 +686,40 @@ select:
         - script.execute: apply_ota_source
 
 script:
+  - id: apply_reporting_interval
+    # Reduce DB Reporting: poll every sensor that normally reports faster than
+    # once a minute at 60s instead, and restore the default intervals when off.
+    # Sensors already at 60s (SCD40, MiCS-4514, uptime, RSSI) are unchanged.
+    then:
+      - component.resume:
+          id: sen55
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${sen55_interval};"
+      - component.resume:
+          id: dps_310
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${dps310_interval};"
+      - component.resume:
+          id: pm0_3_to_1
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${pm_range_interval};"
+      - component.resume:
+          id: pm1_to_2_5
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${pm_range_interval};"
+      - component.resume:
+          id: pm2_5_to_4
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${pm_range_interval};"
+      - component.resume:
+          id: pm4_to_10
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${pm_range_interval};"
+      - component.resume:
+          id: predicted_room_temperature
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${predicted_room_interval};"
+      - component.resume:
+          id: predicted_room_humidity
+          update_interval: !lambda "return id(reduce_db_reporting).state ? ${reduced_db_interval} : ${predicted_room_interval};"
+      - lambda: |-
+          ESP_LOGI("Apollo", "Reduce DB Reporting %s: polling intervals %s",
+                   id(reduce_db_reporting).state ? "ON" : "OFF",
+                   id(reduce_db_reporting).state ? "set to 60s" : "restored to defaults");
+
   - id: apply_ota_source
     # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
     # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
