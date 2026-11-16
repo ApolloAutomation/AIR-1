@@ -43,7 +43,7 @@ jobs:
           # (AIR-1.yaml), not the first-flash Factory image.
           - { yaml: Integrations/ESPHome/beta-channel/AIR-1.yaml,     name: firmware-standard }
           - { yaml: Integrations/ESPHome/beta-channel/AIR-1_BLE.yaml, name: firmware-ble-beta }
-    uses: esphome/workflows/.github/workflows/build.yml@cc3e76de337dc59bc1cba8da58d963cd23b873f1 # 2026.9.0
+    uses: esphome/workflows/.github/workflows/build.yml@e1432c7b31fec7d24a13dc192953ebac836ed98a # 2026.10.3
     with:
       files: ${{ matrix.yaml }}
       esphome-version: stable
