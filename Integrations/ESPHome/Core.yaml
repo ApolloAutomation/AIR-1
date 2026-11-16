@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.11.15.1"
+  version: "26.11.15.2"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
   # Reduced DB Reporting thresholds
