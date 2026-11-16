@@ -61,6 +61,11 @@ substitutions:
   # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
   # legacy BLE devices keep proxying instead of going quiet after an update.
   bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
+  # Keep the BLE stack powered even while the Bluetooth Proxy switch is off.
+  # Only the Factory image sets this to "true", because its Improv-over-BLE
+  # provisioning needs the radio regardless of the proxy switch. Everywhere
+  # else the radio is powered down completely when the proxy is off.
+  ble_always_on: "false"
 
 esphome:
   # List form so package merging concatenates with each variant's own on_boot
@@ -69,18 +74,19 @@ esphome:
     - priority: -100
       then:
         - script.execute: apply_ota_source
-    # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
-    # scanning matches the switch state restored from flash.
+    # Re-apply the Bluetooth Proxy switch after all components set up (also
+    # on every wake from deep sleep), so the BLE radio matches the switch
+    # state restored from flash: powered and scanning when on, powered down
+    # when off.
     - priority: -300
       then:
         - if:
             condition:
               switch.is_on: bluetooth_proxy_switch
             then:
-              - esp32_ble_tracker.start_scan:
-                  continuous: true
+              - script.execute: bluetooth_proxy_on
             else:
-              - esp32_ble_tracker.stop_scan:
+              - script.execute: bluetooth_proxy_off
 
 packages:
   # Physics-based Predicted Room Temperature/Humidity sensors and their
@@ -92,6 +98,13 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
+
+# The BLE stack starts powered down. The Bluetooth Proxy switch powers it up
+# (and starts scanning) only when the proxy is wanted, so a unit with the
+# proxy off does not carry the radio's power draw and self-heating.
+esp32_ble:
+  id: ble
+  enable_on_boot: ${ble_always_on}
 
 esp32_ble_tracker:
   id: ble_tracker
@@ -823,11 +836,12 @@ switch:
     entity_category: "config"
     restore_mode: ${bluetooth_proxy_restore_mode}
     optimistic: true
+    # On: power up the BLE stack, then scan and proxy. Off: stop scanning and
+    # power the BLE stack down entirely (not just pause the scanner).
     on_turn_on:
-      - esp32_ble_tracker.start_scan:
-          continuous: true
+      - script.execute: bluetooth_proxy_on
     on_turn_off:
-      - esp32_ble_tracker.stop_scan:
+      - script.execute: bluetooth_proxy_off
 
 select:
   - platform: template
@@ -859,6 +873,37 @@ select:
         - script.execute: apply_ota_source
 
 script:
+  - id: bluetooth_proxy_on
+    mode: restart
+    then:
+      - ble.enable:
+      # ble.enable only requests the stack; wait until it is up so the scan
+      # start is not rejected. The tracker also resumes continuous scanning on
+      # its own once the stack is active, so a timeout here is harmless.
+      - wait_until:
+          condition:
+            ble.enabled:
+          timeout: 10s
+      - esp32_ble_tracker.start_scan:
+          continuous: true
+
+  - id: bluetooth_proxy_off
+    mode: restart
+    then:
+      # Cancel a turn-on still waiting for the stack so it cannot start a scan
+      # after the radio has been switched off.
+      - script.stop: bluetooth_proxy_on
+      # Always stop, even before the stack is up: this is what clears the
+      # tracker's continuous-scan flag. Otherwise, with the stack kept powered
+      # (ble_always_on), the tracker would start scanning on its own as soon
+      # as the stack becomes active. With nothing running it is a no-op.
+      - esp32_ble_tracker.stop_scan:
+      - if:
+          condition:
+            lambda: "return !${ble_always_on};"
+          then:
+            - ble.disable:
+
   - id: apply_ota_source
     # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
     # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
