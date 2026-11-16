@@ -480,7 +480,33 @@ sensor:
       device_class: "humidity"
       accuracy_decimals: ${humidity_decimal_places}
       filters:
-        - lambda: return x - id(sen55_humidity_offset).state;
+        # The temperature offset models enclosure self-heating, so the air
+        # the SEN55 measures holds the same water vapour as the room but at a
+        # higher temperature. Re-reference RH to the corrected temperature at
+        # constant vapour pressure (Magnus formula, same coefficients as
+        # Predicted_Room.yaml), then apply the flat humidity offset.
+        # Uses the unfiltered SEN55 temperature: sen5x publishes temperature
+        # before humidity in each read, so it is from the same sample.
+        - lambda: |-
+            float rh = x;
+            const float t_raw = id(sen55_temperature).get_raw_state();
+            const float t_off = id(sen55_temperature_offset).state;
+            if (!std::isnan(rh) && !std::isnan(t_raw) && !std::isnan(t_off)) {
+              const float t_room = t_raw - t_off;
+              const float mag_raw = expf((17.625f * t_raw) / (243.04f + t_raw));
+              const float mag_room = expf((17.625f * t_room) / (243.04f + t_room));
+              rh = rh * (mag_raw / mag_room);
+            }
+            const float rh_off = id(sen55_humidity_offset).state;
+            if (!std::isnan(rh_off)) {
+              rh -= rh_off;
+            }
+            if (rh > 100.0f) {
+              rh = 100.0f;
+            } else if (rh < 0.0f) {
+              rh = 0.0f;
+            }
+            return rh;
         - !include { file: reduce_filter.yaml, vars: { delta: "${humidity_reporting_delta}" } }
     voc_index:
       name: "SEN55 VOC"
