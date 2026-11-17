@@ -7,7 +7,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2026.8.0
+  min_version: 2026.10.0
   on_boot:
     - priority: 500
       then:
@@ -57,10 +57,12 @@ update:
 
 improv_serial:
 
-esp32_improv:
+improv_ble:
   authorizer: none
 
 wifi:
+  # Keeps today's no-reboot on lost Wi-Fi; 2026.11 drops the AP exemption
+  reboot_timeout: 0s
   on_connect:
     - component.update: update_http_request
   ap:
