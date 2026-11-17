@@ -16,7 +16,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2026.10.0
+  min_version: 2026.10.1
   on_boot:
     - priority: 500
       then:
