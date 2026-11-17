@@ -1,230 +1,27 @@
 name: Build and Publish Beta
 
-# Builds AIR-1 firmware from the beta branch and publishes it as assets on a
-# rolling "beta-fw" pre-release. The on-device "Firmware Channel" select points
-# OTA updates at these assets. Stable firmware is built/published separately
-# by build.yml (push to main -> GitHub Pages).
-
 on:
   push:
     branches: [beta]
     paths:
       - 'Integrations/ESPHome/**'
+      # A push that only changes this file must rebuild too
+      - '.github/workflows/build-beta.yml'
   workflow_dispatch:
 
-# Least privilege: read-only by default; only publish-beta is elevated to write.
 permissions:
   contents: read
 
-# One beta build per branch at a time. A newer push waits for the running
-# build instead of cancelling it mid-upload; if several pile up, only the
-# newest runs.
 concurrency:
   group: build-beta-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  version:
-    name: Read version
-    runs-on: ubuntu-latest
-    outputs:
-      v: ${{ steps.read.outputs.v }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - id: read
-        run: |
-          v=$(awk '/substitutions:/ {f=1} f && /version:/ {print $2; exit}' \
-            Integrations/ESPHome/Core.yaml | tr -d '"')
-          echo "v=$v" >> "$GITHUB_OUTPUT"
-          echo "Beta version: $v"
-
-  build:
-    name: Build ${{ matrix.name }}
-    needs: version
-    strategy:
-      matrix:
-        include:
-          # Beta serves OTA updates only, so it builds the end-user image
-          # (AIR-1.yaml), not the first-flash Factory image.
-          - { yaml: Integrations/ESPHome/AIR-1.yaml,     name: firmware-standard }
-          - { yaml: Integrations/ESPHome/AIR-1_BLE.yaml, name: firmware-ble-beta }
-    uses: esphome/workflows/.github/workflows/build.yml@e1432c7b31fec7d24a13dc192953ebac836ed98a # 2026.10.3
-    with:
-      files: ${{ matrix.yaml }}
-      esphome-version: stable
-      combined-name: ${{ matrix.name }}
-      release-version: ${{ needs.version.outputs.v }}
-
-  publish-beta:
-    name: Publish beta release assets
-    needs: [version, build]
-    runs-on: ubuntu-latest
+  beta:
     permissions:
       contents: write
-    steps:
-      - name: Download firmware artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          path: fw
-          pattern: firmware*
-
-      - name: Ensure rolling 'beta-fw' pre-release exists
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Only beta publishes; runs dispatched on other branches build but never
-          # touch the beta-fw release.
-          if [ "$GITHUB_REF" != "refs/heads/beta" ]; then
-            echo "::notice::Not publishing: this run is on $GITHUB_REF, not beta."
-            exit 0
-          fi
-          gh release view beta-fw -R "${{ github.repository }}" >/dev/null 2>&1 \
-            || gh release create beta-fw -R "${{ github.repository }}" \
-                 --prerelease --title "Beta (rolling)" \
-                 --notes "Latest AIR-1 beta firmware. Auto-updated on every push to the beta branch."
-
-      - name: Rewrite manifests to absolute URLs and upload assets
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Only beta publishes; runs dispatched on other branches build but never
-          # touch the beta-fw release.
-          if [ "$GITHUB_REF" != "refs/heads/beta" ]; then
-            echo "::notice::Not publishing: this run is on $GITHUB_REF, not beta."
-            exit 0
-          fi
-          # Publish unless a newer beta commit changes firmware: that commit has its
-          # own queued run, which publishes instead. A re-run of an old build can
-          # never roll beta back, and docs-only pushes mid-build don't block it.
-          # Renames count under both names. The compare API lists at most 300 files,
-          # so a full list may be hiding a firmware change: skip then, too.
-          newer=$(gh api "repos/${{ github.repository }}/compare/${GITHUB_SHA}...beta" --jq \
-            'if (.status == "identical" or .status == "ahead") | not then "not-contained"
-             else (.files // [])
-             | [length, ([.[] | .filename, (.previous_filename // empty) | select(startswith("Integrations/ESPHome/"))] | length)]
-             | if .[1] == 0 and .[0] >= 300 then "truncated" else .[1] end
-             end')
-          case "$newer" in
-            0) ;;
-            truncated)
-              echo "::warning::Not publishing ${GITHUB_SHA::7}: beta is 300+ changed files ahead, too many to check for firmware changes. Run this workflow manually on beta to publish its head."
-              exit 0 ;;
-            *)
-              echo "::notice::Not publishing ${GITHUB_SHA::7}: beta has newer firmware changes or does not contain this commit."
-              exit 0 ;;
-          esac
-          BASE="https://github.com/${{ github.repository }}/releases/download/beta-fw"
-          # Each build uploads under its own names, so the manifest devices are
-          # reading always points at files that exist and match it.
-          BUILD="r${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
-          # Bins the live manifests point at stay one more build, so a device that
-          # checked before this publish can still install what it was offered.
-          # Old bins are only deleted when every live manifest was read in full;
-          # anything less skips cleanup this round.
-          SKIP_CLEANUP=
-          KEEP=""
-          rm -rf prev
-          mkdir -p prev
-          if ! assets=$(gh release view beta-fw -R "${{ github.repository }}" --json assets --jq '.assets[].name'); then
-            echo "::warning::Could not list the beta-fw assets; keeping all old firmware this round."
-            SKIP_CLEANUP=1
-          else
-            live=$(printf '%s\n' "$assets" | grep -E '^manifest.*[.]json$' || true)
-            if [ -n "$live" ]; then
-              # A failed or partial download shows up below as an unreadable manifest.
-              gh release download beta-fw -R "${{ github.repository }}" -p 'manifest*.json' -D prev --clobber || true
-              while IFS= read -r m; do
-                if refs=$(jq -r '[.builds[] | .ota.path, ((.parts // [])[].path)]
-                      | if length == 0 or any(.[]; type != "string") then error("no firmware paths")
-                        else .[] | sub(".*/"; "") end' "prev/$m" 2>/dev/null) && [ -n "$refs" ]; then
-                  KEEP+="$refs"$'\n'
-                else
-                  echo "::warning::Could not read the live $m; keeping all old firmware this round."
-                  SKIP_CLEANUP=1
-                fi
-              done <<< "$live"
-            fi
-          fi
-          declare -A DIRS=( [standard]=firmware-standard [ble]=firmware-ble-beta )
-          for v in standard ble; do
-            src="fw/${DIRS[$v]}"
-            man=$(find "$src" -name manifest.json | head -1)
-            if [ -z "$man" ]; then
-              echo "::error::manifest.json not found for ${DIRS[$v]}"
-              exit 1
-            fi
-            # Both variants share a device name, so their bin filenames match.
-            # Release assets are a flat namespace: prefix per variant and build.
-            find "$src" -name '*.bin' | while read -r bin; do
-              mv "$bin" "$(dirname "$bin")/$v-$BUILD-$(basename "$bin")"
-            done
-            echo "Rewriting $man"
-            # Make ota.path and parts[].path absolute release-asset URLs so the
-            # device never has to resolve a relative path against a redirect.
-            jq --arg base "$BASE" --arg pfx "$v-$BUILD-" '
-              .builds[0].ota.path = ($base + "/" + $pfx + (.builds[0].ota.path | sub(".*/"; "")))
-              | .builds[0].parts |= map(.path = ($base + "/" + $pfx + (.path | sub(".*/"; ""))))
-            ' "$man" > "manifest-$v.json"
-            cat "manifest-$v.json"
-            # Firmware first, manifest last: the manifest never names a missing file.
-            # "{} +" (not "\;") so a failed upload fails the step.
-            find "$src" -name '*.bin' -exec \
-              gh release upload beta-fw -R "${{ github.repository }}" --clobber {} +
-            gh release upload beta-fw "manifest-$v.json" -R "${{ github.repository }}" --clobber
-          done
-          # Drop bins that neither this build nor the previous one uses. Failures
-          # here only leave extra files behind, so they are warnings.
-          if [ -n "$SKIP_CLEANUP" ]; then
-            echo "Skipping stale asset cleanup this round."
-          else {
-            gh release view beta-fw -R "${{ github.repository }}" --json assets \
-              | jq -r --arg build "$BUILD-" --arg keep "$KEEP" \
-                  '($keep | split("\n")) as $k | .assets[].name
-                   | select(endswith(".bin") and (contains($build) | not) and (IN($k[]) | not))' \
-              | while read -r old; do
-                  echo "Deleting stale asset $old"
-                  gh release delete-asset beta-fw "$old" -R "${{ github.repository }}" -y < /dev/null \
-                    || echo "::warning::Could not delete stale beta asset $old; it stays on the release."
-                done
-          } || echo "::warning::Stale beta asset cleanup failed; old files left on the release."
-          fi
-          echo "Beta assets published."
-
-      - name: Point beta-fw tag at the built commit
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Only beta publishes; runs dispatched on other branches build but never
-          # touch the beta-fw release.
-          if [ "$GITHUB_REF" != "refs/heads/beta" ]; then
-            echo "::notice::Not publishing: this run is on $GITHUB_REF, not beta."
-            exit 0
-          fi
-          # Publish unless a newer beta commit changes firmware: that commit has its
-          # own queued run, which publishes instead. A re-run of an old build can
-          # never roll beta back, and docs-only pushes mid-build don't block it.
-          # Renames count under both names. The compare API lists at most 300 files,
-          # so a full list may be hiding a firmware change: skip then, too.
-          newer=$(gh api "repos/${{ github.repository }}/compare/${GITHUB_SHA}...beta" --jq \
-            'if (.status == "identical" or .status == "ahead") | not then "not-contained"
-             else (.files // [])
-             | [length, ([.[] | .filename, (.previous_filename // empty) | select(startswith("Integrations/ESPHome/"))] | length)]
-             | if .[1] == 0 and .[0] >= 300 then "truncated" else .[1] end
-             end')
-          case "$newer" in
-            0) ;;
-            truncated)
-              echo "::warning::Not publishing ${GITHUB_SHA::7}: beta is 300+ changed files ahead, too many to check for firmware changes. Run this workflow manually on beta to publish its head."
-              exit 0 ;;
-            *)
-              echo "::notice::Not publishing ${GITHUB_SHA::7}: beta has newer firmware changes or does not contain this commit."
-              exit 0 ;;
-          esac
-          # gh release create tags default-branch HEAD, and uploads never move
-          # the tag, so without this the release's source commit drifts away
-          # from the assets actually published.
-          gh api -X PATCH "repos/${{ github.repository }}/git/refs/tags/beta-fw" \
-            -f sha="${{ github.sha }}" -F force=true
-          echo "beta-fw -> ${{ github.sha }}"
+    uses: ApolloAutomation/Workflows/.github/workflows/build-beta.yml@main
+    with:
+      variants: >-
+        [{"key": "standard", "yaml": "Integrations/ESPHome/AIR-1.yaml",     "name": "firmware-standard"},
+         {"key": "ble",      "yaml": "Integrations/ESPHome/AIR-1_BLE.yaml", "name": "firmware-ble-beta"}]
