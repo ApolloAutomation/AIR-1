@@ -24,7 +24,6 @@ YAML Files (in Integrations/ESPHome):
 - Core.yaml: Shared configuration included by all of the files above (sensors, light, Bluetooth Proxy, Firmware Channel and the firmware version number). You don't flash this file directly.
 - Predicted_Room.yaml: Included from Core.yaml. Adds optional Estimated Room Temperature/Humidity sensors (called Predicted Room in older firmware) that correct for the enclosure's self-heating, plus their tuning settings. Everything in it is disabled by default.
 - reduce_filter.yaml: Included from Core.yaml. The filter behind the "Reduce DB Reporting" switch: when it is on, a sensor only reports when its value changes meaningfully or a periodic heartbeat is due. You don't flash this file directly.
-- beta-channel/: Build-only copies of AIR-1.yaml and AIR-1_BLE.yaml that default the Firmware Channel to Beta. These are used by our beta builds so devices installed from the beta channel keep following it. You don't need these for your own configs.
 
 Firmware Channels:
 - The device has a "Firmware Channel" setting with two options: Stable and Beta. It controls where the Firmware Update entity looks for new firmware.
