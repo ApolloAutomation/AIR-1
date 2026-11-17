@@ -1,3 +1,8 @@
+substitutions:
+  # Improv-over-BLE provisioning needs the BLE stack powered even while the
+  # Bluetooth Proxy switch is off, so the Factory image never powers it down.
+  ble_always_on: "true"
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1

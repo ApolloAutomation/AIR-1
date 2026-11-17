@@ -38,6 +38,28 @@ substitutions:
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+  # To use OTA encryption instead of the password, modify the packaged
+  # ESPHome OTA entry (id: ota_esphome) from your own device YAML instead of
+  # adding a second one. The OTA key is taken from a static
+  # `api: encryption: key:` in your device YAML (a key provisioned at runtime
+  # cannot be reused; set `ota` `encryption: key:` explicitly in that case).
+  # This takes two flashes:
+  #
+  #   # Flash 1: keep the password so the running firmware's password prompt
+  #   # can still be answered, and allow this one plaintext upload.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       encryption:
+  #         allow_plaintext_upload: true
+  #
+  #   # Flash 2: the device now accepts encrypted uploads; drop the password
+  #   # and the plaintext allowance.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       password: !remove
+  #       encryption: {}
+  #
+  # See https://esphome.io/components/ota/esphome/
 
   # Manifest URL bases. Stable = GitHub Pages (main branch builds).
   # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
@@ -55,6 +77,11 @@ substitutions:
   # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
   # legacy BLE devices keep proxying instead of going quiet after an update.
   bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
+  # Keep the BLE stack powered even while the Bluetooth Proxy switch is off.
+  # Only the Factory image sets this to "true", because its Improv-over-BLE
+  # provisioning needs the radio regardless of the proxy switch. Everywhere
+  # else the radio is powered down completely when the proxy is off.
+  ble_always_on: "false"
 
 esphome:
   # List form so package merging concatenates with each variant's own on_boot
@@ -63,21 +90,22 @@ esphome:
     - priority: -100
       then:
         - script.execute: apply_ota_source
-    # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
-    # scanning matches the switch state restored from flash.
+    # Re-apply the Bluetooth Proxy switch after all components set up (also
+    # on every wake from deep sleep), so the BLE radio matches the switch
+    # state restored from flash: powered and scanning when on, powered down
+    # when off.
     - priority: -300
       then:
         - if:
             condition:
               switch.is_on: bluetooth_proxy_switch
             then:
-              - esp32_ble_tracker.start_scan:
-                  continuous: true
+              - script.execute: bluetooth_proxy_on
             else:
-              - esp32_ble_tracker.stop_scan:
+              - script.execute: bluetooth_proxy_off
 
 packages:
-  # Physics-based Predicted Room Temperature/Humidity sensors and their
+  # Physics-based Estimated Room Temperature/Humidity sensors and their
   # tuning CONFIG numbers. Everything in it is disabled by default.
   predicted_room: !include Predicted_Room.yaml
 
@@ -86,6 +114,13 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
+
+# The BLE stack starts powered down. The Bluetooth Proxy switch powers it up
+# (and starts scanning) only when the proxy is wanted, so a unit with the
+# proxy off does not carry the radio's power draw and self-heating.
+esp32_ble:
+  id: ble
+  enable_on_boot: ${ble_always_on}
 
 esp32_ble_tracker:
   id: ble_tracker
@@ -453,6 +488,21 @@ sensor:
       device_class: "temperature"
       accuracy_decimals: ${temperature_decimal_places}
       filters:
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window the Estimated Room sensors wait out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
         - lambda: return x - id(sen55_temperature_offset).state;
         - !include { file: reduce_filter.yaml, vars: { delta: "${temperature_reporting_delta}" } }
     humidity:
@@ -461,7 +511,48 @@ sensor:
       device_class: "humidity"
       accuracy_decimals: ${humidity_decimal_places}
       filters:
-        - lambda: return x - id(sen55_humidity_offset).state;
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window the Estimated Room sensors wait out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
+        # The temperature offset models enclosure self-heating, so the air
+        # the SEN55 measures holds the same water vapour as the room but at a
+        # higher temperature. Re-reference RH to the corrected temperature at
+        # constant vapour pressure (Magnus formula, same coefficients as
+        # Predicted_Room.yaml), then apply the flat humidity offset.
+        # Uses the unfiltered SEN55 temperature: sen5x publishes temperature
+        # before humidity in each read, so it is from the same sample.
+        - lambda: |-
+            float rh = x;
+            const float t_raw = id(sen55_temperature).get_raw_state();
+            const float t_off = id(sen55_temperature_offset).state;
+            if (!std::isnan(rh) && !std::isnan(t_raw) && !std::isnan(t_off)) {
+              const float t_room = t_raw - t_off;
+              const float mag_raw = expf((17.625f * t_raw) / (243.04f + t_raw));
+              const float mag_room = expf((17.625f * t_room) / (243.04f + t_room));
+              rh = rh * (mag_raw / mag_room);
+            }
+            const float rh_off = id(sen55_humidity_offset).state;
+            if (!std::isnan(rh_off)) {
+              rh -= rh_off;
+            }
+            if (rh > 100.0f) {
+              rh = 100.0f;
+            } else if (rh < 0.0f) {
+              rh = 0.0f;
+            }
+            return rh;
         - !include { file: reduce_filter.yaml, vars: { delta: "${humidity_reporting_delta}" } }
     voc_index:
       name: "SEN55 VOC"
@@ -817,11 +908,12 @@ switch:
     entity_category: "config"
     restore_mode: ${bluetooth_proxy_restore_mode}
     optimistic: true
+    # On: power up the BLE stack, then scan and proxy. Off: stop scanning and
+    # power the BLE stack down entirely (not just pause the scanner).
     on_turn_on:
-      - esp32_ble_tracker.start_scan:
-          continuous: true
+      - script.execute: bluetooth_proxy_on
     on_turn_off:
-      - esp32_ble_tracker.stop_scan:
+      - script.execute: bluetooth_proxy_off
 
 select:
   - platform: template
@@ -853,6 +945,37 @@ select:
         - script.execute: apply_ota_source
 
 script:
+  - id: bluetooth_proxy_on
+    mode: restart
+    then:
+      - ble.enable:
+      # ble.enable only requests the stack; wait until it is up so the scan
+      # start is not rejected. The tracker also resumes continuous scanning on
+      # its own once the stack is active, so a timeout here is harmless.
+      - wait_until:
+          condition:
+            ble.enabled:
+          timeout: 10s
+      - esp32_ble_tracker.start_scan:
+          continuous: true
+
+  - id: bluetooth_proxy_off
+    mode: restart
+    then:
+      # Cancel a turn-on still waiting for the stack so it cannot start a scan
+      # after the radio has been switched off.
+      - script.stop: bluetooth_proxy_on
+      # Always stop, even before the stack is up: this is what clears the
+      # tracker's continuous-scan flag. Otherwise, with the stack kept powered
+      # (ble_always_on), the tracker would start scanning on its own as soon
+      # as the stack becomes active. With nothing running it is a no-op.
+      - esp32_ble_tracker.stop_scan:
+      - if:
+          condition:
+            lambda: "return !${ble_always_on};"
+          then:
+            - ble.disable:
+
   - id: apply_ota_source
     # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
     # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
