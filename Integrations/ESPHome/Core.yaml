@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.11.15.2"
+  version: "26.11.16.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
   # Reduced DB Reporting thresholds
@@ -343,25 +343,34 @@ binary_sensor:
             id(button_press_timestamp) = millis();
     on_release:
       then:
-        - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 10000) {
-              id(prevent_sleep).turn_on();
-              id(factory_reset_switch).turn_on();
-            }
-            else if (millis() - id(button_press_timestamp) >= 3000) {
-              //Turn Prevent Sleep On
-              id(prevent_sleep).turn_on();
-              //Prevent Sleep
-              id(deep_sleep_1).prevent_deep_sleep();
-            }
-            else {
-              // StatusCheck
-              id(statusCheck).execute();
-              delay(3000);
-              id(testCycleCount) = 0;
-              id(runTest) = true;
-              id(testScript).execute();
-            }
+        - if:
+            condition:
+              lambda: "return millis() - id(button_press_timestamp) >= 10000;"
+            then:
+              - lambda: |-
+                  id(prevent_sleep).turn_on();
+                  id(factory_reset_switch).turn_on();
+            else:
+              - if:
+                  condition:
+                    lambda: "return millis() - id(button_press_timestamp) >= 3000;"
+                  then:
+                    - lambda: |-
+                        //Turn Prevent Sleep On
+                        id(prevent_sleep).turn_on();
+                        //Prevent Sleep
+                        id(deep_sleep_1).prevent_deep_sleep();
+                  else:
+                    # StatusCheck, then the self-test. Wait for statusCheck so the
+                    # self-test colour doesn't cut off the status colour, and use
+                    # a delay action: a blocking delay() would stall the main loop.
+                    - script.execute: statusCheck
+                    - script.wait: statusCheck
+                    - delay: 3s
+                    - lambda: |-
+                        id(testCycleCount) = 0;
+                        id(runTest) = true;
+                    - script.execute: testScript
   - platform: homeassistant
     name: "OTA Mode"
     id: ota_mode
