@@ -89,7 +89,9 @@ esphome:
     # Re-apply the Bluetooth Proxy switch after all components set up (also
     # on every wake from deep sleep), so the BLE radio matches the switch
     # state restored from flash: powered and scanning when on, powered down
-    # when off.
+    # when off. Keep this: the switch restores before esp32_ble is set up, so
+    # its own ble.enable is ignored and this is what powers the radio (the
+    # Factory image's Improv-over-BLE setup depends on it).
     - priority: -300
       then:
         - if:
