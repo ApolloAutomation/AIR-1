@@ -1,6 +1,6 @@
 substitutions:
   name: apollo-air-1
-  version: "26.11.15.2"
+  version: "26.11.17.1"
   device_description: ${name} made by Apollo Automation - version ${version}.
 
   # Reduced DB Reporting thresholds
@@ -38,6 +38,28 @@ substitutions:
   # `substitutions: { ota_password: !secret <name>_ota_password }` so each
   # device on your network uses a unique secret instead of the shared default.
   ota_password: "apolloautomation"
+  # To use OTA encryption instead of the password, modify the packaged
+  # ESPHome OTA entry (id: ota_esphome) from your own device YAML instead of
+  # adding a second one. The OTA key is taken from a static
+  # `api: encryption: key:` in your device YAML (a key provisioned at runtime
+  # cannot be reused; set `ota` `encryption: key:` explicitly in that case).
+  # This takes two flashes:
+  #
+  #   # Flash 1: keep the password so the running firmware's password prompt
+  #   # can still be answered, and allow this one plaintext upload.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       encryption:
+  #         allow_plaintext_upload: true
+  #
+  #   # Flash 2: the device now accepts encrypted uploads; drop the password
+  #   # and the plaintext allowance.
+  #   ota:
+  #     - id: !extend ota_esphome
+  #       password: !remove
+  #       encryption: {}
+  #
+  # See https://esphome.io/components/ota/esphome/
 
   # Manifest URL bases. Stable = GitHub Pages (main branch builds).
   # Beta = rolling "beta-fw" pre-release assets (beta branch builds).
@@ -52,8 +74,9 @@ substitutions:
 
   # Bluetooth Proxy switch state on a device with no stored preference yet
   # (first boot after this switch was added, or after a factory reset). The
-  # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
-  # legacy BLE devices keep proxying instead of going quiet after an update.
+  # unified image ships the proxy off. AIR-1_BLE.yaml overrides this to ON so
+  # legacy BLE devices keep proxying instead of going quiet after an update,
+  # and AIR-1_Factory.yaml does too so Improv-over-BLE setup has the radio.
   bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
 
 esphome:
@@ -63,21 +86,24 @@ esphome:
     - priority: -100
       then:
         - script.execute: apply_ota_source
-    # Re-apply the Bluetooth Proxy switch after all components set up, so BLE
-    # scanning matches the switch state restored from flash.
+    # Re-apply the Bluetooth Proxy switch after all components set up (also
+    # on every wake from deep sleep), so the BLE radio matches the switch
+    # state restored from flash: powered and scanning when on, powered down
+    # when off. Keep this: the switch restores before esp32_ble is set up, so
+    # its own ble.enable is ignored and this is what powers the radio (the
+    # Factory image's Improv-over-BLE setup depends on it).
     - priority: -300
       then:
         - if:
             condition:
               switch.is_on: bluetooth_proxy_switch
             then:
-              - esp32_ble_tracker.start_scan:
-                  continuous: true
+              - script.execute: bluetooth_proxy_on
             else:
-              - esp32_ble_tracker.stop_scan:
+              - script.execute: bluetooth_proxy_off
 
 packages:
-  # Physics-based Predicted Room Temperature/Humidity sensors and their
+  # Physics-based Estimated Room Temperature/Humidity sensors and their
   # tuning CONFIG numbers. Everything in it is disabled by default.
   predicted_room: !include Predicted_Room.yaml
 
@@ -86,6 +112,13 @@ esp32:
   flash_size: 4MB
   framework:
     type: esp-idf
+
+# The BLE stack starts powered down. The Bluetooth Proxy switch powers it up
+# (and starts scanning) only when the proxy is wanted, so a unit with the
+# proxy off does not carry the radio's power draw and self-heating.
+esp32_ble:
+  id: ble
+  enable_on_boot: false
 
 esp32_ble_tracker:
   id: ble_tracker
@@ -308,25 +341,34 @@ binary_sensor:
             id(button_press_timestamp) = millis();
     on_release:
       then:
-        - lambda: |-
-            if (millis() - id(button_press_timestamp) >= 10000) {
-              id(prevent_sleep).turn_on();
-              id(factory_reset_switch).turn_on();
-            }
-            else if (millis() - id(button_press_timestamp) >= 3000) {
-              //Turn Prevent Sleep On
-              id(prevent_sleep).turn_on();
-              //Prevent Sleep
-              id(deep_sleep_1).prevent_deep_sleep();
-            }
-            else {
-              // StatusCheck
-              id(statusCheck).execute();
-              delay(3000);
-              id(testCycleCount) = 0;
-              id(runTest) = true;
-              id(testScript).execute();
-            }
+        - if:
+            condition:
+              lambda: "return millis() - id(button_press_timestamp) >= 10000;"
+            then:
+              - lambda: |-
+                  id(prevent_sleep).turn_on();
+                  id(factory_reset_switch).turn_on();
+            else:
+              - if:
+                  condition:
+                    lambda: "return millis() - id(button_press_timestamp) >= 3000;"
+                  then:
+                    - lambda: |-
+                        //Turn Prevent Sleep On
+                        id(prevent_sleep).turn_on();
+                        //Prevent Sleep
+                        id(deep_sleep_1).prevent_deep_sleep();
+                  else:
+                    # StatusCheck, then the self-test. Wait for statusCheck so the
+                    # self-test colour doesn't cut off the status colour, and use
+                    # a delay action: a blocking delay() would stall the main loop.
+                    - script.execute: statusCheck
+                    - script.wait: statusCheck
+                    - delay: 3s
+                    - lambda: |-
+                        id(testCycleCount) = 0;
+                        id(runTest) = true;
+                    - script.execute: testScript
   - platform: homeassistant
     name: "OTA Mode"
     id: ota_mode
@@ -453,6 +495,21 @@ sensor:
       device_class: "temperature"
       accuracy_decimals: ${temperature_decimal_places}
       filters:
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window the Estimated Room sensors wait out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
         - lambda: return x - id(sen55_temperature_offset).state;
         - !include { file: reduce_filter.yaml, vars: { delta: "${temperature_reporting_delta}" } }
     humidity:
@@ -461,7 +518,48 @@ sensor:
       device_class: "humidity"
       accuracy_decimals: ${humidity_decimal_places}
       filters:
-        - lambda: return x - id(sen55_humidity_offset).state;
+        # Warm-up: the first readings after power-up are off while the SEN55
+        # and enclosure settle, so drop them for the first 3 minutes (the same
+        # window the Estimated Room sensors wait out). Only while deep sleep is
+        # prevented: a sleeping unit is awake ~2 minutes per cycle and would
+        # otherwise never report.
+        - lambda: |-
+            static bool warmed_up = false;
+            if (!warmed_up) {
+              if (millis() >= 180000) {
+                warmed_up = true;
+              } else if (id(prevent_sleep).state || id(ota_mode).state) {
+                return {};
+              }
+            }
+            return x;
+        # The temperature offset models enclosure self-heating, so the air
+        # the SEN55 measures holds the same water vapour as the room but at a
+        # higher temperature. Re-reference RH to the corrected temperature at
+        # constant vapour pressure (Magnus formula, same coefficients as
+        # Predicted_Room.yaml), then apply the flat humidity offset.
+        # Uses the unfiltered SEN55 temperature: sen5x publishes temperature
+        # before humidity in each read, so it is from the same sample.
+        - lambda: |-
+            float rh = x;
+            const float t_raw = id(sen55_temperature).get_raw_state();
+            const float t_off = id(sen55_temperature_offset).state;
+            if (!std::isnan(rh) && !std::isnan(t_raw) && !std::isnan(t_off)) {
+              const float t_room = t_raw - t_off;
+              const float mag_raw = expf((17.625f * t_raw) / (243.04f + t_raw));
+              const float mag_room = expf((17.625f * t_room) / (243.04f + t_room));
+              rh = rh * (mag_raw / mag_room);
+            }
+            const float rh_off = id(sen55_humidity_offset).state;
+            if (!std::isnan(rh_off)) {
+              rh -= rh_off;
+            }
+            if (rh > 100.0f) {
+              rh = 100.0f;
+            } else if (rh < 0.0f) {
+              rh = 0.0f;
+            }
+            return rh;
         - !include { file: reduce_filter.yaml, vars: { delta: "${humidity_reporting_delta}" } }
     voc_index:
       name: "SEN55 VOC"
@@ -698,13 +796,10 @@ button:
       - lambda: |-
           id(deep_sleep_1).prevent_deep_sleep();
       - delay: 3s
-      - script.execute: apply_ota_source
-      - script.wait: apply_ota_source
-      # The manifest fetch runs in its own task; give it a fixed window to land
-      # (update.is_available stays false for same-version switches).
-      - delay: 5s
-      - lambda: id(update_http_request).perform(true);
-      # Only reached if the update did not start (e.g. manifest unreachable).
+      - script.execute: install_selected_channel
+      - script.wait: install_selected_channel
+      # Reached after perform(true) has queued the flash, or when the script
+      # refused to install (no fresh manifest from the selected channel).
       # Re-arm deep sleep unless something else is holding the device awake.
       - if:
           condition:
@@ -817,11 +912,12 @@ switch:
     entity_category: "config"
     restore_mode: ${bluetooth_proxy_restore_mode}
     optimistic: true
+    # On: power up the BLE stack, then scan and proxy. Off: stop scanning and
+    # power the BLE stack down entirely (not just pause the scanner).
     on_turn_on:
-      - esp32_ble_tracker.start_scan:
-          continuous: true
+      - script.execute: bluetooth_proxy_on
     on_turn_off:
-      - esp32_ble_tracker.stop_scan:
+      - script.execute: bluetooth_proxy_off
 
 select:
   - platform: template
@@ -853,6 +949,31 @@ select:
         - script.execute: apply_ota_source
 
 script:
+  - id: bluetooth_proxy_on
+    mode: restart
+    then:
+      - ble.enable:
+      # ble.enable only requests the stack; wait until it is up so the scan
+      # start is not rejected. The tracker also resumes continuous scanning on
+      # its own once the stack is active, so a timeout here is harmless.
+      - wait_until:
+          condition:
+            ble.enabled:
+          timeout: 10s
+      - esp32_ble_tracker.start_scan:
+          continuous: true
+
+  - id: bluetooth_proxy_off
+    mode: restart
+    then:
+      # Cancel a turn-on still waiting for the stack so it cannot start a scan
+      # after the radio has been switched off.
+      - script.stop: bluetooth_proxy_on
+      # Always stop, even before the stack is up: this is what clears the
+      # tracker's continuous-scan flag. With nothing running it is a no-op.
+      - esp32_ble_tracker.stop_scan:
+      - ble.disable:
+
   - id: apply_ota_source
     # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).
     # The manifest base is per-variant (ota_*_manifest substitutions) so legacy
@@ -864,6 +985,59 @@ script:
           ESP_LOGI("firmware", "OTA manifest set to: %s", url);
           id(update_http_request).set_source_url(url);
       - component.update: update_http_request
+
+  # The update component drops a check requested while another one is running,
+  # so keep asking until install_selected_channel has what it needs.
+  - id: request_channel_manifest
+    mode: restart
+    then:
+      - repeat:
+          count: 4
+          then:
+            - script.execute: apply_ota_source
+            - script.wait: apply_ota_source
+            - delay: 5s
+
+  # Forced install, but only of a manifest fetched after this press from the
+  # selected channel. mode single: a second press while this runs is ignored.
+  - id: install_selected_channel
+    mode: single
+    then:
+      # Mark the cached firmware URL as old. Only a successful check replaces it.
+      - lambda: |-
+          std::string &fw = const_cast<std::string &>(id(update_http_request).update_info.firmware_url);
+          if (fw.rfind('!', 0) != 0) fw.insert(0, "!");
+      - script.execute: request_channel_manifest
+      # Wait for a check without error whose firmware sits in the directory of
+      # the selected channel's manifest (relative Pages paths are merged with
+      # it, beta paths are release-asset URLs in the same directory).
+      - wait_until:
+          timeout: 20s
+          condition:
+            lambda: |-
+              const char *src = id(update_http_request).get_source_url();
+              const size_t dir = strrchr(src, '/') - src + 1;
+              return !id(update_http_request).status_has_error() &&
+                     strncmp(id(update_http_request).update_info.firmware_url.c_str(), src, dir) == 0;
+      - script.stop: request_channel_manifest
+      - lambda: |-
+          std::string &fw = const_cast<std::string &>(id(update_http_request).update_info.firmware_url);
+          const char *src = id(update_http_request).get_source_url();
+          const size_t dir = strrchr(src, '/') - src + 1;
+          const bool err = id(update_http_request).status_has_error();
+          const char *why = nullptr;
+          if (fw.rfind('!', 0) == 0) {
+            why = err ? "the manifest check failed" : "no manifest arrived within 20s";
+            fw.erase(0, 1);  // put the old URL back for the update entity
+          } else if (err || strncmp(fw.c_str(), src, dir) != 0) {
+            why = "the manifest that arrived is not from the selected channel";
+          }
+          if (why != nullptr) {
+            ESP_LOGW("firmware", "Firmware Update: %s (%s); not installing", why, src);
+            return;
+          }
+          ESP_LOGI("firmware", "Installing %s", fw.c_str());
+          id(update_http_request).perform(true);
 
   - id: setCo2AutoCalibration
     mode: restart

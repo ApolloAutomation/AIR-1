@@ -1,3 +1,9 @@
+substitutions:
+  # Improv-over-BLE setup needs the BLE radio, so a new or factory-reset unit
+  # starts with the Bluetooth Proxy switch on. Turning it off after setup
+  # powers the radio down like any other image.
+  bluetooth_proxy_restore_mode: RESTORE_DEFAULT_ON
+
 esphome:
   name: "${name}"
   friendly_name: Apollo AIR-1
@@ -7,7 +13,7 @@ esphome:
     name: "ApolloAutomation.AIR-1"
     version: "${version}"
 
-  min_version: 2026.10.0
+  min_version: 2026.10.1
   on_boot:
     - priority: 500
       then:
