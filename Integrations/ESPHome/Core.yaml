@@ -74,14 +74,10 @@ substitutions:
 
   # Bluetooth Proxy switch state on a device with no stored preference yet
   # (first boot after this switch was added, or after a factory reset). The
-  # unified image ships the proxy off; AIR-1_BLE.yaml overrides this to ON so
-  # legacy BLE devices keep proxying instead of going quiet after an update.
+  # unified image ships the proxy off. AIR-1_BLE.yaml overrides this to ON so
+  # legacy BLE devices keep proxying instead of going quiet after an update,
+  # and AIR-1_Factory.yaml does too so Improv-over-BLE setup has the radio.
   bluetooth_proxy_restore_mode: RESTORE_DEFAULT_OFF
-  # Keep the BLE stack powered even while the Bluetooth Proxy switch is off.
-  # Only the Factory image sets this to "true", because its Improv-over-BLE
-  # provisioning needs the radio regardless of the proxy switch. Everywhere
-  # else the radio is powered down completely when the proxy is off.
-  ble_always_on: "false"
 
 esphome:
   # List form so package merging concatenates with each variant's own on_boot
@@ -120,7 +116,7 @@ esp32:
 # proxy off does not carry the radio's power draw and self-heating.
 esp32_ble:
   id: ble
-  enable_on_boot: ${ble_always_on}
+  enable_on_boot: false
 
 esp32_ble_tracker:
   id: ble_tracker
@@ -972,15 +968,9 @@ script:
       # after the radio has been switched off.
       - script.stop: bluetooth_proxy_on
       # Always stop, even before the stack is up: this is what clears the
-      # tracker's continuous-scan flag. Otherwise, with the stack kept powered
-      # (ble_always_on), the tracker would start scanning on its own as soon
-      # as the stack becomes active. With nothing running it is a no-op.
+      # tracker's continuous-scan flag. With nothing running it is a no-op.
       - esp32_ble_tracker.stop_scan:
-      - if:
-          condition:
-            lambda: "return !${ble_always_on};"
-          then:
-            - ble.disable:
+      - ble.disable:
 
   - id: apply_ota_source
     # Sets the OTA manifest URL from the Firmware Channel select (Stable/Beta).

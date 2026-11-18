@@ -1,7 +1,8 @@
 substitutions:
-  # Improv-over-BLE provisioning needs the BLE stack powered even while the
-  # Bluetooth Proxy switch is off, so the Factory image never powers it down.
-  ble_always_on: "true"
+  # Improv-over-BLE setup needs the BLE radio, so a new or factory-reset unit
+  # starts with the Bluetooth Proxy switch on. Turning it off after setup
+  # powers the radio down like any other image.
+  bluetooth_proxy_restore_mode: RESTORE_DEFAULT_ON
 
 esphome:
   name: "${name}"
